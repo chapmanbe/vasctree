@@ -2,7 +2,10 @@ import networkx as nx
 import numpy as np
 import cPickle
 import imageTools.imageUtils.basicImageUtils as biu
-
+import matplotlib.pyplot as pplot
+import imageTools.ITKUtils.io as io
+import imageTools.ITKUtils.view as view
+import imageTools.browse.a3d as a3d
 
 def prune(g):
     d1 = [item[0] for item in g.degree().items() if item[1] == 1]
@@ -63,18 +66,62 @@ def getNodeSuccessors(g, nds, que, cd, maxdepth=2):
             nds.append(nd)
             newque.extend(g.successors(nd))
         return getNodeSuccessors(g, nds, newque,cd+1,maxdepth=maxdepth)        
-def getNodeSubgraph(g, node, depth=2):
+def getNodeSubgraph(g, node, depth=4):
     """???"""
     nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth))
     h = g.subgraph(nodes)
     return h
-def getGraphBoundingBox(g,imgShape):
-    crds = biu.get_crds(g.nodes(),data['imgShape'])
-    bbox = ((crds[0].min(),crds[0].max()),(crds[1].min(),crds[1].max()),(crds[2].min(),crds[2].max()))
+def grabImageRegion(g, img,buffer=20):
+    bb = getGraphBoundingBox(g)
+    sz = img.shape
+    # nodes and crds are stored in traditional (x,y,z) rather than numpy's (x,y,x)
+    bs = ((max(bb[0][0]-buffer,0),min(bb[0][1]+buffer,sz[2]-1)),
+          (max(bb[1][0]-buffer,0),min(bb[1][1]+buffer,sz[1]-1)),
+          (max(bb[2][0]-buffer,0),min(bb[2][1]+buffer,sz[0]-1)))
+          
+    subimg = img[bs[2][0]:bs[2][1]+1,bs[1][0]:bs[1][1]+1,:]#bs[0][0]:bs[0][1]+1]
+    return subimg, bs
+def insertGraphInImage(g, vimg):
+
+    for node in g.nodes():
+        vimg[node[2],node[1],node[0]] += 2000
+    for edge in g.edges():
+        path = g[edge[0]][edge[1]].get('path')
+        if(path):
+            for p in path:
+                vimg[p[2],p[1],p[0]] += 1000
+    return vimg
+def getGraphBoundingBox(g):
+    crds = np.array(g.nodes())
+    bbox = ((crds[:,0].min(),crds[:,0].max()),(crds[:,1].min(),crds[:,1].max()),(crds[:,2].min(),crds[:,2].max()))
     return bbox
+def visualizeXY_MPL(g,img,buffer=20):
+    simg = insertGraphInImage(g,img)
+    simg,bs = grabImageRegion(g,simg)
+    print bs
+    print g.nodes()
+    locs = np.array(g.nodes())
+    print locs
+    #pos = dict(zip(g.nodes(),zip(locs[:,0],locs[:,1])))
+    pos = dict(zip(g.nodes(),zip(locs[:,0],locs[:,1]-bs[1][0])))#-bs[0][0])))
+    mipz = simg.max(axis=0)
+    pplot.clf()
+    pplot.imshow(biu.win_lev(mipz, 800, 1000))
+    pplot.gray()
+    nx.draw_networkx_nodes(g,pos,node_size=5, alpha=0.5)
+    nx.draw_networkx_edges(g,pos,alpha=0.5)
+    pplot.show()
+    #pplot.savefig("viewxy.png")
+    raw_input('continue')
+    
+def pickRandomNodeOfDegree(g,degree=4):
+    import random
+    d1 = [item[0] for item in g.degree().items() if item[1] == degree]
+    node = random.choice(d1)
+    return node
     
 def main():
-    fo = file("../Skeletons/PE00000_edited_skeleton_graphs_orig.pckle","rb")
+    fo = file("../Skeletons/PE00000_edited_skeleton_graphs.pckle","rb")
     data = cPickle.load(fo)
     ogs = data["orderedGraphs"]
     g = ogs[(0,u'0')]
@@ -91,7 +138,32 @@ def main():
         print iter, oldSize
         
     dg = np.array(g.degree().values())
-    print dg.max(), deg.min(), deg.mean()
+    print dg.max(), dg.min(), dg.mean()
+    img = io.readImage("PE00000.mha",returnITK=False,imgMode='sshort')
+    
+    img2 = img.copy()
+    vimg = insertGraphInImage(g,img2)
+    a3d.call(data = [vimg])
+    for i in range(20):
+        randomNode = pickRandomNodeOfDegree(g)
+        h = getNodeSubgraph(g,randomNode)
+        
+        visualizeXY_MPL(h,img,buffer=20)
+    fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","wb")
+    cPickle.dump(g,fo)
+def main2():
+    fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","rb")
+    g = cPickle.load(fo)
+
+    img = io.readImage("PE00000.mha",returnITK=False,imgMode='sshort')
+    
+    img2 = img.copy()
+    vimg = insertGraphInImage(g,img2)
+    for i in range(20):
+        randomNode = pickRandomNodeOfDegree(g)
+        h = getNodeSubgraph(g,randomNode)
+        
+        visualizeXY_MPL(h,img,buffer=20)
     
 if __name__ == '__main__':
-    main()
+    main2()

@@ -24,13 +24,10 @@ class SkeletonGraph(object):
         self.Dim3Crds=[]
         self.Dim3={}
     def findNearestNode(self,val):
-        """compute the distance from val to every node in the current graph. Assumes both
-        nodes and val are 1D indicies into the image"""
+        """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
-        nlocs = np.array([np.unravel_index(n, self.img.shape) for n in nodes])
-        vloc = np.unravel_index(val, self.img.shape)
-        dist = ((nlocs-vloc)**2).sum(axis=1)
-        rootInd = np.argmin(dist)
+        nlocs = np.array(nodes)
+        rootInd = ((nlocs-val)**2).sum(axis=1).argmin()
         return nodes[rootInd]
     def __setCurrentGraphKey(self, key): #for counting through the graphs, tells you the graph currently being produced or looped through
         self.currentGraphKey = key
@@ -49,7 +46,6 @@ class SkeletonGraph(object):
         """Function for generating the graphs from the skeleton. For each point in the skeleton, 
         a graph is generated consisting of that points neighbors"""
         sz = self.img.shape
-        nxy = sz[1]*sz[2]
         
         # create an array of indices pointing to the nonzero locations in the image
         inds = np.nonzero(self.img.flat)[0]
@@ -68,16 +64,17 @@ class SkeletonGraph(object):
             while( que ):
                 ind = que.pop()
                 # convert from 1D to 3D coordinate
-                crd = (np.unravel_index(ind,sz))
+                crd = np.unravel_index(ind,sz)[::-1]
                 # get the neighbors of ind in 3 dimensions constrained by image boundary
                 s = (max(0,crd[0]-1),max(0,crd[1]-1),max(0,crd[2]-1))
-                e = (min(sz[0],crd[0]+2),min(sz[1],crd[1]+2),min(sz[2],crd[2]+2))
-                subimg = mask[s[0]:e[0],s[1]:e[1],s[2]:e[2]]
+                e = (min(sz[2],crd[0]+2),min(sz[1],crd[1]+2),min(sz[0],crd[2]+2))
+                subimg = mask[s[2]:e[2],s[1]:e[1],s[0]:e[0]]
                 neighbors = subimg.take(np.where(subimg.flat > -1)[0])
 
                 for nn in neighbors:
-                    if (ind != nn ):
-                        G.add_edge(ind,nn)
+                    crd2 = np.unravel_index(nn,sz)[::-1]
+                    if (crd2 != crd ):
+                        G.add_edge(crd,crd2)
                         # remove nn from our master list and add it to the que
                         try:
                             inds.remove(nn)
@@ -175,7 +172,7 @@ class SkeletonGraph(object):
         try:
             matchedNode = self.findNearestNode(origin)
             self.roots[(self.currentGraphKey,key)] = matchedNode
-        except Excpetion, error:
+        except Exception, error:
             print "failed in setRoot", error
         
     

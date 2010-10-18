@@ -55,9 +55,9 @@ def main():
         originCrds = cPickle.load(ofile)
         for o in originCrds:
             #originInds = np.unravel_index(o,img.shape)
-            originInds = int(o[0]+0.5)+int(0.5+o[1])*nx+int(0.5+o[2])*nxy
-            print "tracing graph for origin",o,originInds
-            sg.setRoot(originInds, key=o.getProperty("id"))
+            oint = (int(o[0]+0.5),int(0.5+o[1]),int(0.5+o[2]))
+            print "tracing graph for origin",oint
+            sg.setRoot(oint, key=o.getProperty("id"))
             sg.traceEndpoints(key=o.getProperty("id"))
       
         print "save the graphs"
