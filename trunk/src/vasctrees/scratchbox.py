@@ -68,7 +68,8 @@ def getNodeSuccessors(g, nds, que, cd, maxdepth=2):
         return getNodeSuccessors(g, nds, newque,cd+1,maxdepth=maxdepth)        
 def getNodeSubgraph(g, node, depth=4):
     """???"""
-    nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth))
+    nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth)+
+                getNodePredecessors(g,[],[node],0,maxdepth=depth))
     h = g.subgraph(nodes)
     return h
 def grabImageRegion(g, img,buffer=20):
@@ -81,7 +82,42 @@ def grabImageRegion(g, img,buffer=20):
           
     subimg = img[bs[2][0]:bs[2][1]+1,bs[1][0]:bs[1][1]+1,:]#bs[0][0]:bs[0][1]+1]
     return subimg, bs
+
+def scaleImage(img, spacing):
+    """returns an isotropic version of img, wih scaling based on voxel spacing
+    provided in spcaing"""
+    ms = float(min(spacing))
+    #reverse the order to match numpy's reversed indexing
+    img2 = ndi.zoom(img,[spacing[2]/ms,spacing[1]/ms,spacing[0]/ms])
+    return img2
+def scaleIndex(ind,scl):
+    newInd = (int(ind[0]*scl[0]+0.5),int(ind[1]*scl[1]+0.5),int(ind[2]*scl[2]+0.5))
+    return newInd
+def scaleGraph(g, spacing):
+    """returns a scaled copy of g with scaling determined by spacing
+    g: a NetworkX graph
+    spacing: the voxel spacing for the associated image"""
+    if( g.is_directed() ):
+        h = nx.DiGraph()
+    else:
+        h = nx.Graph()
+    ms = float(min(spacing))    
+    scl [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
+        
+    edges = g.edges(data = True)
+    for n1,n2,data in edges:
+        n1b = scaleIndex(n1,scl)
+        n2b = scaleIndex(n2,scl)
+        path = data['path']
+        newPath = []
+        for p in path:
+            p2 = scaleIndex(p,scl)
+            newPath.append(p2)
+        h.add_edge(n1b,n2b,path=newPath)
+    return h
+    
 def insertGraphInImage(g, vimg):
+    
 
     for node in g.nodes():
         vimg[node[2],node[1],node[0]] += 2000
@@ -141,14 +177,14 @@ def main():
     print dg.max(), dg.min(), dg.mean()
     img = io.readImage("PE00000.mha",returnITK=False,imgMode='sshort')
     
-    img2 = img.copy()
-    vimg = insertGraphInImage(g,img2)
-    a3d.call(data = [vimg])
-    for i in range(20):
-        randomNode = pickRandomNodeOfDegree(g)
-        h = getNodeSubgraph(g,randomNode)
-        
-        visualizeXY_MPL(h,img,buffer=20)
+    #img2 = img.copy()
+    #vimg = insertGraphInImage(g,img2)
+    #a3d.call(data = [vimg])
+    #for i in range(20):
+    #    randomNode = pickRandomNodeOfDegree(g)
+    #    h = getNodeSubgraph(g,randomNode)
+    #    
+    #    visualizeXY_MPL(h,img,buffer=20)
     fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","wb")
     cPickle.dump(g,fo)
 def main2():
@@ -166,4 +202,5 @@ def main2():
         visualizeXY_MPL(h,img,buffer=20)
     
 if __name__ == '__main__':
+    main()
     main2()

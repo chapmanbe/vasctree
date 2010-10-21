@@ -38,9 +38,7 @@ def main():
         parser = getParser()
         (options, args) = parser.parse_args()
         successfullUncompress = subprocess.call("gunzip %s"%(options.filename+".gz"),shell=True)
-        img = io.readImage(options.filename,returnITK=False,imgMode = "uchar")
-        nxy = img.shape[1]*img.shape[2]
-        nx = img.shape[2]
+        img = io.readImage(options.filename,returnITK=True,imgMode = "uchar")
         sg = SkeletonGraph(img)
         print "generating graph from skeleton"
         sg.getGraphsFromSkeleton()

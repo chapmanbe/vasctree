@@ -12,9 +12,11 @@ import subprocess
 
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
-    to model the shape of the vasculture"""
+    to model the shape of the vasculture
+    img must be an ITK image"""
     def __init__(self, img):
-        self.img = img
+        self.img = itk.PyBuffer.IUC3.GetArrayFromImage(img)
+        self.spacing = img.GetSpacing()
         self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
