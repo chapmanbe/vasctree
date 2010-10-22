@@ -6,6 +6,8 @@ import matplotlib.pyplot as pplot
 import imageTools.ITKUtils.io as io
 import imageTools.ITKUtils.view as view
 import imageTools.browse.a3d as a3d
+import itk
+import scipy.ndimage as ndi
 
 def prune(g):
     d1 = [item[0] for item in g.degree().items() if item[1] == 1]
@@ -66,7 +68,7 @@ def getNodeSuccessors(g, nds, que, cd, maxdepth=2):
             nds.append(nd)
             newque.extend(g.successors(nd))
         return getNodeSuccessors(g, nds, newque,cd+1,maxdepth=maxdepth)        
-def getNodeSubgraph(g, node, depth=4):
+def getNodeSubgraph(g, node, depth=2):
     """???"""
     nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth)+
                 getNodePredecessors(g,[],[node],0,maxdepth=depth))
@@ -80,7 +82,7 @@ def grabImageRegion(g, img,buffer=20):
           (max(bb[1][0]-buffer,0),min(bb[1][1]+buffer,sz[1]-1)),
           (max(bb[2][0]-buffer,0),min(bb[2][1]+buffer,sz[0]-1)))
           
-    subimg = img[bs[2][0]:bs[2][1]+1,bs[1][0]:bs[1][1]+1,:]#bs[0][0]:bs[0][1]+1]
+    subimg = img[bs[2][0]:bs[2][1]+1,bs[1][0]:bs[1][1]+1,bs[0][0]:bs[0][1]+1]
     return subimg, bs
 
 def scaleImage(img, spacing):
@@ -102,7 +104,7 @@ def scaleGraph(g, spacing):
     else:
         h = nx.Graph()
     ms = float(min(spacing))    
-    scl [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
+    scl = [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
         
     edges = g.edges(data = True)
     for n1,n2,data in edges:
@@ -115,7 +117,27 @@ def scaleGraph(g, spacing):
             newPath.append(p2)
         h.add_edge(n1b,n2b,path=newPath)
     return h
-    
+
+def offsetGraph(g, offset):
+    """returns an offset copy of g with the offset determined by spacing
+    g: a NetworkX graph
+    offset: the voxel offset to be applied"""
+    if( g.is_directed() ):
+        h = nx.DiGraph()
+    else:
+        h = nx.Graph()
+        
+    edges = g.edges(data = True)
+    for n1,n2,data in edges:
+        n1b = (n1[0]-offset[0],n1[1]-offset[1],n1[2]-offset[2])
+        n2b = (n2[0]-offset[0],n2[1]-offset[1],n2[2]-offset[2])
+        path = data['path']
+        newPath = []
+        for p in path:
+            p2 = (p[0]-offset[0],p[1]-offset[1],p[2]-offset[2]) 
+            newPath.append(p2)
+        h.add_edge(n1b,n2b,path=newPath)
+    return h    
 def insertGraphInImage(g, vimg):
     
 
@@ -131,23 +153,60 @@ def getGraphBoundingBox(g):
     crds = np.array(g.nodes())
     bbox = ((crds[:,0].min(),crds[:,0].max()),(crds[:,1].min(),crds[:,1].max()),(crds[:,2].min(),crds[:,2].max()))
     return bbox
-def visualizeXY_MPL(g,img,buffer=20):
-    simg = insertGraphInImage(g,img)
-    simg,bs = grabImageRegion(g,simg)
-    print bs
-    print g.nodes()
-    locs = np.array(g.nodes())
+def drawPath(path,view):
+    pp = np.array(path)
+    if( pp.ndim != 2 ):
+        return
+    if(view.lower() == 'xy'):
+        p = (pp[:,1],pp[:,0])
+    elif( view.lower() == 'xz'):
+        p = (pp[:,2],pp[:,0])
+    else:
+        p = (pp[:,2], pp[:,1])
+    pplot.plot(p[1],p[0],'b-',alpha=0.5)
+def drawGraphEdges(g, view):
+    for n1, n2, edge in g.edges(data=True):
+        drawPath(edge['path'],view)
+def visualizeXY_MPL(g,img,spacing, buffer=20):
+    simg, bs = grabImageRegion(g, img)
+    bso = (bs[0][0],bs[1][0],bs[2][0])
+    go = offsetGraph(g, bso)
+    gso = scaleGraph(go, spacing)
+    simg = scaleImage(simg, spacing)
+    #simg = insertGraphInImage(gso,simg)
+    print bso
+    print gso.nodes()
+    locs = np.array(gso.nodes())
     print locs
-    #pos = dict(zip(g.nodes(),zip(locs[:,0],locs[:,1])))
-    pos = dict(zip(g.nodes(),zip(locs[:,0],locs[:,1]-bs[1][0])))#-bs[0][0])))
+    fig = pplot.figure()
+    fig1 = fig.add_subplot(221,frameon=False,xticks=[],yticks=[])
+    pos1 = dict(zip(gso.nodes(),zip(locs[:,0],locs[:,1])))
+    pos2 = dict(zip(gso.nodes(),zip(locs[:,0],locs[:,2])))
+    pos3 = dict(zip(gso.nodes(),zip(locs[:,1],locs[:,2])))
     mipz = simg.max(axis=0)
-    pplot.clf()
-    pplot.imshow(biu.win_lev(mipz, 800, 1000))
     pplot.gray()
-    nx.draw_networkx_nodes(g,pos,node_size=5, alpha=0.5)
-    nx.draw_networkx_edges(g,pos,alpha=0.5)
-    pplot.show()
-    #pplot.savefig("viewxy.png")
+    im1 = fig1.imshow(biu.win_lev(mipz, 800, 1000))  
+    nx.draw_networkx_nodes(gso,pos1,node_size=5, alpha=0.5)
+    drawGraphEdges(gso,'xy')
+    #nx.draw_networkx_edges(gso,pos1,alpha=0.5)
+    
+    fig2 = fig.add_subplot(222,frameon=False,xticks=[],yticks=[])
+    mipy = simg.max(axis=1)
+    pplot.gray()
+    im2 = fig2.imshow(biu.win_lev(mipy, 800, 1000))  
+    nx.draw_networkx_nodes(gso,pos2,node_size=5, alpha=0.5)
+    drawGraphEdges(gso,'xz')
+    #nx.draw_networkx_edges(gso,pos2,alpha=0.5)
+    
+    fig3 = fig.add_subplot(223,frameon=False,xticks=[],yticks=[])
+    mipy = simg.max(axis=2)
+    pplot.gray()
+    im3 = fig3.imshow(biu.win_lev(mipy, 800, 1000))  
+    nx.draw_networkx_nodes(gso,pos3,node_size=5, alpha=0.5)
+    drawGraphEdges(gso,'yz')
+    #nx.draw_networkx_edges(gso,pos3,alpha=0.5)
+    fig.show()
+    fig.savefig("viewxy.png")
     raw_input('continue')
     
 def pickRandomNodeOfDegree(g,degree=4):
@@ -175,7 +234,9 @@ def main():
         
     dg = np.array(g.degree().values())
     print dg.max(), dg.min(), dg.mean()
-    img = io.readImage("PE00000.mha",returnITK=False,imgMode='sshort')
+    imgitk = io.readImage("PE00000.mha",returnITK=True,imgMode='sshort')
+    img = itk.PyBuffer.ISS3.GetArrayFromImage(imgitk)
+    spacing = imgitk.GetSpacing()
     
     #img2 = img.copy()
     #vimg = insertGraphInImage(g,img2)
@@ -191,7 +252,9 @@ def main2():
     fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","rb")
     g = cPickle.load(fo)
 
-    img = io.readImage("PE00000.mha",returnITK=False,imgMode='sshort')
+    imgitk = io.readImage("PE00000.mha",returnITK=True,imgMode='sshort')
+    img = itk.PyBuffer.ISS3.GetArrayFromImage(imgitk)
+    spacing = imgitk.GetSpacing()
     
     img2 = img.copy()
     vimg = insertGraphInImage(g,img2)
@@ -199,8 +262,8 @@ def main2():
         randomNode = pickRandomNodeOfDegree(g)
         h = getNodeSubgraph(g,randomNode)
         
-        visualizeXY_MPL(h,img,buffer=20)
+        visualizeXY_MPL(h,img,spacing, buffer=20)
     
 if __name__ == '__main__':
-    main()
+    #main()
     main2()
