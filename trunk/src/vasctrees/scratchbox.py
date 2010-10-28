@@ -8,9 +8,10 @@ import imageTools.ITKUtils.view as view
 import imageTools.browse.a3d as a3d
 import itk
 import scipy.ndimage as ndi
-from mayaviCTA import viewImg
+from mayaviCTA import viewImgWithNodes as viewImg
 def prune(g):
     d0 = [item[0] for item in g.degree().items() if item[1] == 0]
+    g.remove_nodes_from(d0)
     print "number of 0 degree nodes is",len(d0)
     d1 = [item[0] for item in g.degree().items() if item[1] == 1]
     for d in d1:
@@ -29,14 +30,14 @@ def prune(g):
                     #print "connecting",p2,d
                     g.add_edge(p2,d,path=e2+[p]+edge)
                     if( not checkTopConsistency(g) ):
-                        raw_input('inconsistent graph after deleting edge %d %d %d'%(p2,p,d))
+                        raw_input('inconsistent graph after deleting edge %s %s %s'%(p2,p,d))
                 except Exception, error:
                     print "failed to merge", error
             elif( len(edge) < 5 ):
                 #print "removing",d, g.degree(d)
                 g.remove_node(d)
                 if( not checkTopConsistency(g) ):
-                        raw_input('inconsistent graph after deleting edge %d %d'%(p,d))
+                        raw_input('inconsistent graph after deleting edge %s %s %s'%(p,d,edge))
         else:
             print "no predecessor for",d
     d0 = [item[0] for item in g.degree().items() if item[1] == 0]
@@ -58,7 +59,7 @@ def checkTopConsistency(g):
     if( len( tops ) == 1 ):
         return True
     else:
-        print tops
+        #print tops
         return False
 def getNodePredecessors(g, nds, que, cd, maxdepth=2):
     if( cd >= maxdepth ):
@@ -83,7 +84,7 @@ def getNodeSuccessors(g, nds, que, cd, maxdepth=2):
             nds.append(nd)
             newque.extend(g.successors(nd))
         return getNodeSuccessors(g, nds, newque,cd+1,maxdepth=maxdepth)        
-def getNodeSubgraph(g, node, depth=3):
+def getNodeSubgraph(g, node, depth=1):
     """???"""
     nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth)+
                 getNodePredecessors(g,[],[node],0,maxdepth=depth))
@@ -100,17 +101,19 @@ def grabImageRegion(g, img,buffer=10):
     subimg = img[bs[2][0]:bs[2][1]+1,bs[1][0]:bs[1][1]+1,bs[0][0]:bs[0][1]+1]
     return subimg, bs
 
-def scaleImage(img, spacing):
+def scaleImage(img, spacing, scl = None):
     """returns an isotropic version of img, wih scaling based on voxel spacing
     provided in spcaing"""
-    ms = float(min(spacing))
-    #reverse the order to match numpy's reversed indexing
-    img2 = ndi.zoom(img,[spacing[2]/ms,spacing[1]/ms,spacing[0]/ms])
-    return img2
+    if( not scl ):
+        ms = float(min(spacing))
+        scl = [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
+        #reverse the order to match numpy's reversed indexing
+    img2 = ndi.zoom(img,[scl[2],scl[1],scl[0]])
+    return img2, scl
 def scaleIndex(ind,scl):
     newInd = (int(ind[0]*scl[0]+0.5),int(ind[1]*scl[1]+0.5),int(ind[2]*scl[2]+0.5))
     return newInd
-def scaleGraph(g, spacing):
+def scaleGraph(g, spacing, scl = None):
     """returns a scaled copy of g with scaling determined by spacing
     g: a NetworkX graph
     spacing: the voxel spacing for the associated image"""
@@ -118,8 +121,10 @@ def scaleGraph(g, spacing):
         h = nx.DiGraph()
     else:
         h = nx.Graph()
-    ms = float(min(spacing))    
-    scl = [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
+    
+    if( not scl ):
+        ms = float(min(spacing))
+        scl = [spacing[0]/ms, spacing[1]/ms, spacing[2]/ms]
         
     edges = g.edges(data = True)
     for n1,n2,data in edges:
@@ -131,7 +136,7 @@ def scaleGraph(g, spacing):
             p2 = scaleIndex(p,scl)
             newPath.append(p2)
         h.add_edge(n1b,n2b,path=newPath)
-    return h
+    return h, scl
 
 def offsetGraph(g, offset):
     """returns an offset copy of g with the offset determined by spacing
@@ -168,6 +173,15 @@ def getGraphBoundingBox(g):
     crds = np.array(g.nodes())
     bbox = ((crds[:,0].min(),crds[:,0].max()),(crds[:,1].min(),crds[:,1].max()),(crds[:,2].min(),crds[:,2].max()))
     return bbox
+def getCenterObject(img,node):
+    """given a binary image corresponding to a graph node node, only return that
+    portion of the image contiguous with node"""
+    print "node to grab object for is",node
+    limg = ndi.label(img)[0]
+    nlabel = limg[node[2],node[1],node[0]]
+    print nlabel
+    
+    return np.where(limg == nlabel,1,0)
 def drawPath(path,view,color):
     pp = np.array(path)
     if( pp.ndim != 2 ):
@@ -195,49 +209,65 @@ def drawGraphEdges(g, view):
         count += 1
     #print "*"*20
     #print "*"*20
-        
-def visualizeXY_MPL(g,img,spacing, buffer=20):
+
+def printGraphValues(g,img, lbl=''):
+    if( lbl ):
+        print lbl
+    for n1, n2, edge in g.edges(data=True):
+        print n1, img[n1[2],n1[1],n1[0]], n2, img[n2[2],n2[1],n2[0]]
+        print "edge"
+        for e in edge['path']:
+            print e, img[e[2],e[1],e[0]]
+def visualizeXY_MPL(g,img, node, spacing, buffer=20):
+    printGraphValues(g,img,"original graph and image")
     simg, bs = grabImageRegion(g, img)
+    
     bso = (bs[0][0],bs[1][0],bs[2][0])
+    nscl = (node[0]-bso[0],node[1]-bso[1],node[2]-bso[2])
+    cimg = getCenterObject(simg,nscl)
+    
     go = offsetGraph(g, bso)
-    gso = scaleGraph(go, spacing)
-    simg = scaleImage(simg, spacing)
-    #simg = insertGraphInImage(gso,simg)
-    viewImg(simg,spacing)
+    printGraphValues(go,simg, "after subimg")
+    gso,scl = scaleGraph(go, spacing)
+    viewImg(cimg,spacing, [1,],gso,title="%s %s"%(node,o))
     print bso
     print gso.nodes()
     locs = np.array(gso.nodes())
     print locs
+    
+    w,l = 5,3
+    node_size = 10
+    alpha = 0.9
     fig = pplot.figure()
     fig1 = fig.add_subplot(221,frameon=False,xticks=[],yticks=[])
     pos1 = dict(zip(gso.nodes(),zip(locs[:,0],locs[:,1])))
     pos2 = dict(zip(gso.nodes(),zip(locs[:,0],locs[:,2])))
     pos3 = dict(zip(gso.nodes(),zip(locs[:,1],locs[:,2])))
-    mipz = simg.sum(axis=0)
+    mipz = cimg.sum(axis=0)
     pplot.gray()
-    im1 = fig1.imshow(biu.win_lev(mipz, 8,5))  
-    nx.draw_networkx_nodes(gso,pos1,node_size=5, alpha=0.5)
+    im1 = fig1.imshow(biu.win_lev(mipz, w,l))  
+    nx.draw_networkx_nodes(gso,pos1,node_size=node_size, alpha=alpha)
     drawGraphEdges(gso,'xy')
     #nx.draw_networkx_edges(gso,pos1,alpha=0.5)
     
     fig2 = fig.add_subplot(222,frameon=False,xticks=[],yticks=[])
-    mipy = simg.sum(axis=1)
+    mipy = cimg.sum(axis=1)
     pplot.gray()
-    im2 = fig2.imshow(biu.win_lev(mipy, 8,5))  
-    nx.draw_networkx_nodes(gso,pos2,node_size=5, alpha=0.5)
+    im2 = fig2.imshow(biu.win_lev(mipy, w,l))  
+    nx.draw_networkx_nodes(gso,pos2,node_size=node_size, alpha=alpha)
     drawGraphEdges(gso,'xz')
     #nx.draw_networkx_edges(gso,pos2,alpha=0.5)
     
     fig3 = fig.add_subplot(223,frameon=False,xticks=[],yticks=[])
-    mipy = simg.sum(axis=2)
+    mipx = cimg.sum(axis=2)
     pplot.gray()
-    im3 = fig3.imshow(biu.win_lev(mipy, 8,5))  
-    nx.draw_networkx_nodes(gso,pos3,node_size=5, alpha=0.5)
+    im3 = fig3.imshow(biu.win_lev(mipx, w,l))  
+    nx.draw_networkx_nodes(gso,pos3,node_size=node_size, alpha=alpha)
     drawGraphEdges(gso,'yz')
     #nx.draw_networkx_edges(gso,pos3,alpha=0.5)
     fig.show()
-    fig.savefig("viewxy.png")
-    raw_input('continue')
+    fig.savefig("viewxyz_%d_%d_%d.png"%node)
+    #raw_input('continue')
     
 def pickRandomNodeOfDegree(g,degree=3):
     import random
@@ -246,7 +276,8 @@ def pickRandomNodeOfDegree(g,degree=3):
     return node
     
 def main():
-    fo = file("../Skeletons/PE00000_edited_skeleton_graphs.pckle","rb")
+    #fo = file("../Skeletons/PE00000_edited_skeleton_graphs.pckle","rb")
+    fo = file("PE00000_edited_bc_333_skeleton_graphs.pckle","rb")
     data = cPickle.load(fo)
     ogs = data["orderedGraphs"]
     g = ogs[(0,u'0')]
@@ -276,34 +307,56 @@ def main():
     #    h = getNodeSubgraph(g,randomNode)
     #    
     #    visualizeXY_MPL(h,img,buffer=20)
-    fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","wb")
+    fo = file("PE00000_edited_bc_333_skeleton_graphs_pruned.pckle","wb")
     cPickle.dump(g,fo)
-def main2():
-    fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","rb")
-    g = cPickle.load(fo)
     
+def pruner(g,func):
     oldSize = g.size()
     iter = 0
-    while(True):
-        pruneTwosers(g)
+    while( True ):
+        func(g)
         iter += 1
-        newSize =  g.size()
+        newSize = g.size()
         if( newSize == oldSize ):
             break
         else:
             oldSize = newSize
         print iter, oldSize
-    raw_input('continue')
+        
+def main2():
+    #fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","rb")
+    fo = file("PE00000_edited_bc_333_skeleton_graphs_pruned.pckle","rb")
+    g = cPickle.load(fo)
+    
+    oldSize = g.size()
+    iter = 0
+    print "eliminate degree two nodes"
+    pruner(g,pruneTwosers)
+    #print "drop short edges"
+    #pruner(g,prune)
+    #while(True):
+    #    pruneTwosers(g)
+    #    iter += 1
+    #    newSize =  g.size()
+    #    if( newSize == oldSize ):
+    #        break
+    #    else:
+    #        oldSize = newSize
+    #    print iter, oldSize
+    #raw_input('continue')
 
-    imgitk = io.readImage("PE00000_edited.mha",returnITK=True,imgMode='sshort')
+    imgitk = io.readImage("PE00000_edited_bc_333.mha",returnITK=True,imgMode='sshort')
     img = itk.PyBuffer.ISS3.GetArrayFromImage(imgitk)
     spacing = imgitk.GetSpacing()
-    
+    #viewImg(img,spacing, [1,])
+    nodes = [(94, 301, 275), (58, 221, 168),(76, 300, 183),(97, 270, 118),(341, 319, 256)]
     for i in range(20):
         randomNode = pickRandomNodeOfDegree(g)
+    #for randomNode in nodes:
+        print "randomly selected node is",randomNode
         h = getNodeSubgraph(g,randomNode)
         
-        visualizeXY_MPL(h,img,spacing, buffer=20)
+        visualizeXY_MPL(h,img,randomNode, spacing, buffer=20)
     
 if __name__ == '__main__':
     #main()
