@@ -18,12 +18,12 @@ def prune(g):
         if( g.predecessors(d) ):
             
             p = g.predecessors(d)[0]
-            edge = g.get_edge_data(p,d)['path']
+            edge = g[p][d]['path']
             if( g.degree(p) == 2 ):
                 try:
                     
                     p2 = g.predecessors(p)[0]
-                    e2 = g.get_edge_data(p2,p)['path']
+                    e2 = g[p2][p]['path']
                     #print "removing",p
                     g.remove_node(p)
                     
@@ -84,8 +84,9 @@ def getNodeSuccessors(g, nds, que, cd, maxdepth=2):
             nds.append(nd)
             newque.extend(g.successors(nd))
         return getNodeSuccessors(g, nds, newque,cd+1,maxdepth=maxdepth)        
-def getNodeSubgraph(g, node, depth=1):
+def getNodeSubgraph(g, node, depth=8):
     """???"""
+    print 'depth is',depth
     nodes = set(getNodeSuccessors(g,[],[node],0,maxdepth=depth)+
                 getNodePredecessors(g,[],[node],0,maxdepth=depth))
     h = g.subgraph(nodes)
@@ -229,7 +230,7 @@ def visualizeXY_MPL(g,img, node, spacing, buffer=20):
     go = offsetGraph(g, bso)
     printGraphValues(go,simg, "after subimg")
     gso,scl = scaleGraph(go, spacing)
-    viewImg(cimg,spacing, [1,],gso,title="%s %s"%(node,o))
+    viewImg(cimg,spacing, [1,],gso,title="")
     print bso
     print gso.nodes()
     locs = np.array(gso.nodes())
@@ -326,12 +327,12 @@ def pruner(g,func):
 def main2():
     #fo = file("../Skeletons/PE00000_edited_skeleton_graphs_pruned.pckle","rb")
     fo = file("PE00000_edited_bc_333_skeleton_graphs_pruned.pckle","rb")
+    #fo = file("PE00000_edited_bc_333_skeleton_graphs.pckle","rb")
     g = cPickle.load(fo)
     
     oldSize = g.size()
     iter = 0
-    print "eliminate degree two nodes"
-    pruner(g,pruneTwosers)
+
     #print "drop short edges"
     #pruner(g,prune)
     #while(True):
@@ -348,7 +349,10 @@ def main2():
     imgitk = io.readImage("PE00000_edited_bc_333.mha",returnITK=True,imgMode='sshort')
     img = itk.PyBuffer.ISS3.GetArrayFromImage(imgitk)
     spacing = imgitk.GetSpacing()
+    #viewImg(img,[1,1,1], [1,],g)
     #viewImg(img,spacing, [1,])
+    print "eliminate degree two nodes"
+    pruner(g,pruneTwosers)
     nodes = [(94, 301, 275), (58, 221, 168),(76, 300, 183),(97, 270, 118),(341, 319, 256)]
     for i in range(20):
         randomNode = pickRandomNodeOfDegree(g)

@@ -10,7 +10,7 @@ import itk
 import subprocess
 from optparse import OptionParser
 
-from SkeletonGraph import SkeletonGraph
+from vasctrees.SkeletonGraph import SkeletonGraph
 
 def getParser():
     try:
@@ -48,10 +48,11 @@ def main():
             sg.setCurrentGraph(i)
             sg.findEndpointsBifurcations()
             
-        sg.setLargestGraphToCurrentGraph()    
+        sg.setLargestGraphToCurrentGraph()
+        print "processing with origins defined in",options.originsFile
         ofile = file(options.originsFile,'rb')
         originCrds = cPickle.load(ofile)
-        for o in originCrds:
+        for o in [originCrds[0]]:
             #originInds = np.unravel_index(o,img.shape)
             oint = (int(o[0]+0.5),int(0.5+o[1]),int(0.5+o[2]))
             print "tracing graph for origin",oint

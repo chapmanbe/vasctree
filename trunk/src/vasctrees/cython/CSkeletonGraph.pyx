@@ -8,9 +8,6 @@ import os
 import imageTools.browse.a3d as a3d
 import itk
 import subprocess
-import cmvtg
-import scipy.ndimage as ndi
-import matplotlib.pyplot as plt
 
 
 class SkeletonGraph(object):
@@ -47,60 +44,53 @@ class SkeletonGraph(object):
         szs = np.array([self.graphs[k].number_of_nodes() for k in keys ])
         ind = np.argmax(szs)
         self.setCurrentGraph(keys[ind])
-    def getGraphsFromSkeleton(self, verbose = True):
+    def getGraphsFromSkeleton(self):
         """Function for generating the graphs from the skeleton. For each point in the skeleton, 
         a graph is generated consisting of that points neighbors"""
         sz = self.img.shape
-        if( verbose ):
-            print "labeling skeleton image"
-        lmask = ndi.label(self.img,structure=np.ones((3,3,3)))
-        if( verbose ):
-            print "found %d distinct object(s) in skeleton"%lmask[1]
-        for i in range(1,lmask[1]+1):
-            m = np.where(lmask[0]==i,1,0).astype(np.uint8)
-            crds = np.array(np.nonzero(m)[::-1]).transpose().astype(np.int32)
-            if( verbose ): print "generating graph from skeleton"
-            g = cmvtg.getGraphsFromSkeleton(m,crds)
-            if( verbose ):
-                self.cg = g
-                self.viewCurrentGraph()
-            ep, bif = cmvtg.findEndpointsBifurcations(g)
-            print "Number of pre-pruning bifurcations",len(bif)
-            g = cmvtg.pruneUndirectedBifurcations(g,bif)
-            if( verbose ):
-                self.cg = g
-                self.viewCurrentGraph()
-            ep, bif = cmvtg.findEndpointsBifurcations(g)
-            print "Number of post-pruning bifurcations",len(bif)
-            self.graphs[1] = g
-
-    def viewCurrentGraph(self):
-        nodes = self.cg.nodes()
-        d = self.cg.degree()
-        pos_xy = {}
-        pos_xz = {}
-        pos_yz = {}
-        sz = []
-        for n in nodes:
-            pos_xy[n] = n[:2]; pos_xz[n] = n[::2]; pos_yz[n] = n[1:]
-            sz.append(3*d[n])
-
         
-        fig = plt.figure(0)
-        fig.add_subplot(221)
-        plt.title("x-y view")
-        nx.draw(self.cg,pos_xy,with_labels=False, node_size = sz)
+        # create an array of indices pointing to the nonzero locations in the image
+        inds = np.nonzero(self.img.flat)[0]
+        mask = np.ones(sz,np.int32)*-1
+        
+        # create a new image populated with the skeleton locations
+        mask.put(inds,inds)
+        inds = list(inds)
+        #numpy array goes z,y,x
+        graphNum = 0 #should equal the number of points in the skeleton once completed
+        while( inds ):
+            # while there are are still points not added to a graph
+            # create a new graph
+            G = nx.Graph()
+            que = [inds.pop()]
+            while( que ):
+                ind = que.pop()
+                # convert from 1D to 3D coordinate
+                crd = np.unravel_index(ind,sz)[::-1]
+                # get the neighbors of ind in 3 dimensions constrained by image boundary
+                s = (max(0,crd[0]-1),max(0,crd[1]-1),max(0,crd[2]-1))
+                e = (min(sz[2],crd[0]+2),min(sz[1],crd[1]+2),min(sz[0],crd[2]+2))
+                subimg = mask[s[2]:e[2],s[1]:e[1],s[0]:e[0]]
+                neighbors = subimg.take(np.where(subimg.flat > -1)[0])
+
+                for nn in neighbors:
+                    crd2 = np.unravel_index(nn,sz)[::-1]
+                    if (crd2 != crd ):
+                        G.add_edge(crd,crd2)
+                        # remove nn from our master list and add it to the que
+                        try:
+                            inds.remove(nn)
+                            que.append(nn)
+                        except ValueError:
+                            pass
+                if( G.number_of_nodes() % 1000 == 0 ):
+                    print G.number_of_nodes(), len(inds)
+            print "Number of unassigned points: %d"%len(inds)#should count down
+            self.graphs[graphNum] = G #STORES THE GRAPH for each point
+            print "Num of nodes in current graph", G.number_of_nodes()
+            graphNum += 1
+
             
-        fig.add_subplot(222)
-        plt.title("x-z view")
-        nx.draw(self.cg,pos_xz,with_labels=False, node_size = sz)
-                
-        fig.add_subplot(223)
-        plt.title("y-z view")
-        nx.draw(self.cg,pos_yz,with_labels=False, node_size = sz)
-        fig.show()
-        fig.savefig("currentGraph.png")
-        raw_input('continue')
     ###THE FOLLOWING FUNCTIONS ARE USED TO HELP WITH ORDERING THE GRAPHS
     
     def createPathToBifurcation(self, e): #NOT YET USED IN EVALUATEVASCMODEL.PY
@@ -134,31 +124,33 @@ class SkeletonGraph(object):
         
     def traceEndpoints(self, key=0):
         """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
-        og = nx.DiGraph()
-        currentRoot = self.roots[(self.currentGraphKey,key)]
-        endpoints = self.endpoints[self.currentGraphKey]
-        bifurcations = self.bifurcations[self.currentGraphKey]
-        cg = self.graphs[self.currentGraphKey]
-        print "current root is",currentRoot
-        for e in endpoints:
-            plen, path = nx.bidirectional_dijkstra(cg, currentRoot, e)
-            i = 0
-            start = currentRoot
-            path = path[1:]
-            while( path ):               
-                try:
-                    if( path[i] in bifurcations ):
-                        og.add_edge(start,path[i],path=path[:i])
-                        start = path[i]
-                        path = path[i+1:]
-                        i = 0
-                    else:
-                        i += 1
-                except IndexError:
-                    og.add_edge(start,e,{'path':path[:-1]})
-                    path = None
-        self.orderedGraphs[(self.currentGraphKey,key)] = og
-
+        try:
+            og = nx.DiGraph()
+            currentRoot = self.roots[(self.currentGraphKey,key)]
+            endpoints = self.endpoints[self.currentGraphKey]
+            bifurcations = self.bifurcations[self.currentGraphKey]
+            cg = self.graphs[self.currentGraphKey]
+            print "current root is",currentRoot
+            for e in endpoints:
+                plen, path = nx.bidirectional_dijkstra(cg, currentRoot, e)
+                i = 0
+                start = self.roots[(self.currentGraphKey,key)]
+                path = path[1:]
+                while( path ):               
+                    try:
+                        if( path[i] in bifurcations ):
+                            og.add_edge(start,path[i],path=path[:i])
+                            start = path[i]
+                            path = path[i+1:]
+                            i = 0
+                        else:
+                            i += 1
+                    except IndexError:
+                        og.add_edge(start,e,{'path':path[:-1]})
+                        path = None
+            self.orderedGraphs[(self.currentGraphKey,key)] = og
+        except Exception, error:
+            print "failed in traceEndpoints", error
     def setRoots(self, origins):
         """Define where to stop tracing back, defined point on the pulmonary trunk"""
         o = np.array(origins)
@@ -207,8 +199,7 @@ class SkeletonGraph(object):
                 self.cg.remove_node(nd)
         except Exception, error:
             print "failed in deleteTreeEdge", error
-     
-                             
+                              
     def prunePaths(self, threshold=5):
         """Removes paths that are considered to be too short to be part of the skeleton"""
         for e in self.map.keys():

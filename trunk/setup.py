@@ -2,7 +2,7 @@ import ez_setup
 ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup(name='VascTree',
-      version='0.1.1',
+      version='0.1.2',
       description='Python Vascular Tree',
       author='Brian Chapman and Holly Berty',
       author_email='chapbe@pitt.edu',
