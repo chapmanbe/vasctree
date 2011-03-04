@@ -28,6 +28,7 @@ class SkeletonGraph(object):
         self.currentGraphKey = 0
         self.Dim3Crds=[]
         self.Dim3={}
+        self.oimg = None
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
@@ -36,7 +37,11 @@ class SkeletonGraph(object):
         return nodes[rootInd]
     def __setCurrentGraphKey(self, key): #for counting through the graphs, tells you the graph currently being produced or looped through
         self.currentGraphKey = key
-        
+    def setOriginalImage(self,img=None, fname= None):
+        if( img ):
+            self.oimg = img
+        elif( fname ):
+            self.oimg = io.readImage(fname,imgMode='uchar',returnITK=False)
     def setCurrentGraph(self, key = None):
         """can choose to loop through a specific points neighbors by choosing that graph"""
         if( key != None ):
@@ -131,7 +136,24 @@ class SkeletonGraph(object):
                 bifurcations.append(n)
         self.endpoints[self.currentGraphKey] = endpoints
         self.bifurcations[self.currentGraphKey] = bifurcations
-        
+    def selectSeedFromDFE(self):
+        """For the current graph, set the root to be the node nearest the
+        maximum DFE location"""
+        try:
+            dfe = self.dfe
+        except:
+            oimg = self.oimg
+            self.dfe = ndi.distance_transform_cdt(oimg)
+            dfe = self.dfe
+        if( self.bifurcations ):
+            nds = np.array(self.bifurcations[self.currentGraphKey])
+        else:    
+            nds = np.array(self.cg.nodes())
+        if( nds.shape[0] == 1 ): # there is only one node to choose from so use it for seed
+            return (nds[0,0],nds[0,1],nds[0,2])
+        vals = dfe[nds[:,2],nds[:,1],nds[:,0]]
+        mi = vals.max()
+        return (nds[mi,0],nds[mi,1],nds[mi,2])
     def traceEndpoints(self, key=0):
         """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
         og = nx.DiGraph()
