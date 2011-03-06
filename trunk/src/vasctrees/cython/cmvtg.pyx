@@ -104,41 +104,35 @@ def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):
     cdef Py_ssize_t i
     
     # get the total number of connected components in the current graph
-    numConnected = nx.number_connected_components(cg)
+    
     for b in bifurcations:
-        ndist = {}
-        
-        for n in cg.neighbors(b):
-            
-            
-            # test whether deleting the edge between n and b increases
-            # the number of connected components
-            cg.remove_edge(b,n)
-            newNumConnected = nx.number_connected_components(cg)
-            if( newNumConnected == numConnected ): # then this could be a valid deletion
-                # compute the step distance from n to its neighbor b
-                print "the edge between %s and %s can be cut without changing the topology of the graph"%(b,n)
-                ndist[(b,n)] = math.sqrt((n[0]-b[0])**2+(n[1]-b[1])**2+(n[2]-b[2])**2)
-            cg.add_edge(b,n)
-        if( ndist ):
-            items = ndist.items()
-            #rearrange node,distance pairing so we can sort on distance
-            k,v = zip(*items)
-            items = zip(v,k)
-            maxNeighbor = max(items)
-            # cut the maximum step length edge that is valid to cut
-            cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
-        #print "minimum bifurcation dist",v.min()
-        #if( v.min() < 1 ):
-        #    print items
-        #    raw_input('continue')
-        # find the items that are not equal to the minimum step distance
-        #ma = np.nonzero(v != v.min())[0]
-        #if( len(ma) <= len(items) - 2):
-        #    for i in range(len(ma)):
-        #        if( cg.has_edge(k[ma[i]][0],k[ma[i]][1]) ):
-        #            cg.remove_edge(k[ma[i]][0],k[ma[i]][1])
-                    
-            
+        cg = deleteExtraEdges(cg,b)
     return cg
-            
+        
+
+def deleteExtraEdges(cg, b, verbose=False):            
+    ndist = {}
+    numConnected = nx.number_connected_components(cg)
+    for n in cg.neighbors(b):   
+        # test whether deleting the edge between n and b increases
+        # the number of connected components
+        cg.remove_edge(b,n)
+        newNumConnected = nx.number_connected_components(cg)
+        if( newNumConnected == numConnected ): # then this could be a valid deletion
+            # compute the step distance from n to its neighbor b
+            if( verbose ):
+                print "the edge between %s and %s can be cut without changing the topology of the graph"%(b,n)
+            ndist[(b,n)] = math.sqrt((n[0]-b[0])**2+(n[1]-b[1])**2+(n[2]-b[2])**2)
+        cg.add_edge(b,n)
+    if( ndist ):
+        items = ndist.items()
+        #rearrange node,distance pairing so we can sort on distance
+        k,v = zip(*items)
+        items = zip(v,k)
+        maxNeighbor = max(items)
+        # cut the maximum step length edge that is valid to cut
+        if(verbose):
+            print "removing edge",maxNeighbor[1][0],maxNeighbor[1][1]
+        cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
+        cg = deleteExtraEdges(cg,b)
+    return cg

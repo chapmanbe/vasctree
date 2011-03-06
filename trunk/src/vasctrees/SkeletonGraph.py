@@ -11,7 +11,9 @@ import subprocess
 import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
-
+import math
+from scipy.interpolate.fitpack import splev
+from scipy.interpolate.fitpack import splprep
 
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
@@ -47,6 +49,12 @@ class SkeletonGraph(object):
         if( key != None ):
             self.__setCurrentGraphKey(key)
         self.cg = self.graphs[self.currentGraphKey]
+    def getLargestOrderedGraphKey(self):
+        """Return the key associated with the largest ordered graph"""
+        keys = self.orderedGraphs.keys()
+        szs = np.array([self.orderedGraphs[k].number_of_nodes() for k in keys ])
+        ind = np.argmax(szs)
+        return keys[ind]
     def setLargestGraphToCurrentGraph(self):
         keys = self.graphs.keys()
         szs = np.array([self.graphs[k].number_of_nodes() for k in keys ])
@@ -70,18 +78,22 @@ class SkeletonGraph(object):
                 self.cg = g
                 self.viewCurrentGraph()
             ep, bif = cmvtg.findEndpointsBifurcations(g)
-            print "Number of pre-pruning bifurcations",len(bif)
+            #print "Number of pre-pruning bifurcations",len(bif)
             g = cmvtg.pruneUndirectedBifurcations(g,bif)
             if( verbose ):
                 self.cg = g
                 self.viewCurrentGraph()
             ep, bif = cmvtg.findEndpointsBifurcations(g)
-            print "Number of post-pruning bifurcations",len(bif)
-            self.graphs[1] = g
+            #print "Number of post-pruning bifurcations",len(bif)
+            self.graphs[i] = g
 
-    def viewCurrentGraph(self):
-        nodes = self.cg.nodes()
-        d = self.cg.degree()
+    def viewGraph(self,graph = None):
+        """view a graph. If no graph is specified, the current graph is drawn."""
+        plt.clf()
+        if( graph == None ):
+            graph = self.cg
+        nodes = graph.nodes()
+        d = graph.degree()
         pos_xy = {}
         pos_xz = {}
         pos_yz = {}
@@ -89,27 +101,26 @@ class SkeletonGraph(object):
         for n in nodes:
             pos_xy[n] = n[:2]; pos_xz[n] = n[::2]; pos_yz[n] = n[1:]
             sz.append(3*d[n])
-
-        
         fig = plt.figure(0)
         fig.add_subplot(221)
         plt.title("x-y view")
-        nx.draw(self.cg,pos_xy,with_labels=False, node_size = sz)
+        nx.draw(graph,pos_xy,with_labels=False, node_size = sz)
             
         fig.add_subplot(222)
         plt.title("x-z view")
-        nx.draw(self.cg,pos_xz,with_labels=False, node_size = sz)
+        nx.draw(graph,pos_xz,with_labels=False, node_size = sz)
                 
         fig.add_subplot(223)
         plt.title("y-z view")
-        nx.draw(self.cg,pos_yz,with_labels=False, node_size = sz)
+        nx.draw(graph,pos_yz,with_labels=False, node_size = sz)
         fig.show()
         fig.savefig("currentGraph.png")
         raw_input('continue')
     ###THE FOLLOWING FUNCTIONS ARE USED TO HELP WITH ORDERING THE GRAPHS
     
     def createPathToBifurcation(self, e): #NOT YET USED IN EVALUATEVASCMODEL.PY
-        """Need to identify paths between bifurcation points, all points identified in findEndpointsBifurcations"""
+        """Need to identify paths between bifurcation points,
+        all points identified in findEndpointsBifurcations"""
         path = []
         cn = e
         while( True ):
@@ -125,7 +136,8 @@ class SkeletonGraph(object):
                 
         
     def findEndpointsBifurcations(self, verbose = False):
-        """For the current graph, identify all points that are either endpoints (1 neighbor) or """+\
+        """For the current graph, identify all points that are either
+        endpoints (1 neighbor) or """+\
         """bifurcation points (3 neighbors)"""
         endpoints = []
         bifurcations = []
@@ -138,7 +150,7 @@ class SkeletonGraph(object):
         self.bifurcations[self.currentGraphKey] = bifurcations
     def selectSeedFromDFE(self):
         """For the current graph, set the root to be the node nearest the
-        maximum DFE location"""
+        maximum DFE location. Uses a chamfer distance measure to save time"""
         try:
             dfe = self.dfe
         except:
@@ -206,37 +218,41 @@ class SkeletonGraph(object):
             self.roots[(self.currentGraphKey,key)] = matchedNode
         except Exception, error:
             print "failed in setRoot", error
-        
     
     ###OTHER FUNCTIONS
-    def deleteTreeEdge(self, nd, threshold = 5):
-        """delete or merge the edge from nd to its predecessor"""
-        try:
-            predecessor = self.cg.predecessors(nd)
-            if( len(predecessor) > 1 ):
-                print "incorrect number of predecessors" # raise exception
-                return
-            p = predecessor[0]
-            edge = self.cg.get_edge_data(p, nd)
-            if( self.cg.degree(p) == 2 ):
-                # merge the edges
-                p2  = self.cg.predecessors(p)
-                e2 = self.cg.get_edge_data(p2,p)
-                newEdge = e2['path']+[p]+edge['path']
-                self.cg.remove_edges_from([(p2,p),(p,n)])
-                self.cg.add_edge(p2,n,path=newEdge)
-            else:
-                self.cg.remove_node(nd)
-        except Exception, error:
-            print "failed in deleteTreeEdge", error
+    def deleteDegree2Nodes(self, key):
+        """Delete all degree 2 nodes (except for the root node if it is degree 2)"""
+        og = self.orderedGraphs[key]
+        dgs = og.degree()
+        root = self.roots[key]
+        
+        for n,d in dgs.items():
+            if( d == 2 and n != root):
+                print "deleting node",n
+                pred = og.predecessors(n)[0]
+                succ = og.successors(n)[0]
+                p1 = og[pred][n]['path']
+                p2 = og[n][succ]['path']
+                newEdge = p1+[n]+p2
+                og.remove_node(n)
+                og.add_edge(pred,succ,path=newEdge)
+                    
      
                              
-    def prunePaths(self, threshold=5):
-        """Removes paths that are considered to be too short to be part of the skeleton"""
-        for e in self.map.keys():
-            if(self.map[e][1] < threshold):
-                self.cg.remove_nodes_from( self.map[e][2] )
-                self.map.pop(e)
+    def prunePaths(self, key, threshold=5):
+        """Removes terminal paths that are considered to be too short
+        to be part of the skeleton
+        
+        Can I rewrite this in a more functional way?"""
+        og = self.orderedGraphs[key]
+        dgs = og.degree()
+        for n,d in dgs.items():
+            if( d == 1 ):
+                p = og.predecessors(n)[0]
+                path = og[p][n]['path']
+                if( len(path) < threshold ):
+                    og.remove_node(n)
+                    
             
     def saveGraphs(self,name):
         fo = open(name,'wb')
@@ -254,3 +270,73 @@ class SkeletonGraph(object):
                 path = g[edge[0]][edge[1]].get('path')
                 if(path):
                     vimg.flat[path] += 1000
+
+    def fitEdges(self, key):
+        """fits a least squares spline through the paths defined for the
+        orderedGraph indexed by key
+        
+        If a fit is possible, the following key-value pairs are added to an edge
+        
+        'd0': the resampled points
+        'd1': The first derivative computed at each re-sampled point
+        'd2': The second derivative computed at each re-sampled point.
+        
+        """
+        og = self.orderedGraphs[key]
+        edges = og.edges()
+        for e in edges:
+            path = og[e[0]][e[1]]['path']
+            path.extend([e[1]])
+            p = [e[0]]
+            p.extend(path)
+            ae = np.array(p)
+            
+            if( ae.shape[0] > 3 ): # there are not enough points to fit with
+
+                s = ae.shape[0]/2.0
+
+                fit2 = splprep(ae.transpose(),task=0,full_output =1, s=s)[0]
+                u = np.array(range(ae.shape[0]+1)).\
+                        astype(np.float64)/(ae[0].shape[0])
+                # location of spline points
+                og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
+                # first derivative (tangent) of spline
+                og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1) )
+                # second derivative (curvature) of spline
+                og[e[0]][e[1]]['d1'] = np.array(splev(u,fit2[0],der=2))
+                
+            
+def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
+    # get the total number of connected components in the current graph
+    
+    for b in bifurcations:
+        cg = deleteExtraEdges(cg,b)
+    return cg
+        
+
+def deleteExtraEdges(cg, b):            
+    ndist = {}
+    print type(cg)
+    numConnected = nx.number_connected_components(cg)
+    print "number of nodes is ",cg.number_of_nodes()
+    for n in cg.neighbors(b):   
+        # test whether deleting the edge between n and b increases
+        # the number of connected components
+        cg.remove_edge(b,n)
+        newNumConnected = nx.number_connected_components(cg)
+        if( newNumConnected == numConnected ): # then this could be a valid deletion
+            # compute the step distance from n to its neighbor b
+            print "the edge between %s and %s can be cut without changing the topology of the graph"%(b,n)
+            ndist[(b,n)] = math.sqrt((n[0]-b[0])**2+(n[1]-b[1])**2+(n[2]-b[2])**2)
+        cg.add_edge(b,n)
+    if( ndist ):
+        items = ndist.items()
+        #rearrange node,distance pairing so we can sort on distance
+        k,v = zip(*items)
+        items = zip(v,k)
+        maxNeighbor = max(items)
+        # cut the maximum step length edge that is valid to cut
+        print "removing edge",maxNeighbor[1][0],maxNeighbor[1][1]
+        cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
+        cg = deleteExtraEdges(cg,b)
+    return cg
