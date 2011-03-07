@@ -164,7 +164,7 @@ class SkeletonGraph(object):
         if( nds.shape[0] == 1 ): # there is only one node to choose from so use it for seed
             return (nds[0,0],nds[0,1],nds[0,2])
         vals = dfe[nds[:,2],nds[:,1],nds[:,0]]
-        mi = vals.max()
+        mi = vals.argmax()
         return (nds[mi,0],nds[mi,1],nds[mi,2])
     def traceEndpoints(self, key=0):
         """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
