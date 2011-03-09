@@ -297,13 +297,13 @@ class SkeletonGraph(object):
 
                 fit2 = splprep(ae.transpose(),task=0,full_output =1, s=s)[0]
                 u = np.array(range(ae.shape[0]+1)).\
-                        astype(np.float64)/(ae[0].shape[0])
+                        astype(np.float64)/(ae.shape[0])
                 # location of spline points
                 og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
                 # first derivative (tangent) of spline
                 og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1) )
                 # second derivative (curvature) of spline
-                og[e[0]][e[1]]['d1'] = np.array(splev(u,fit2[0],der=2))
+                og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
                 
             
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
