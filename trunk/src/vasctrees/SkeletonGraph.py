@@ -157,7 +157,7 @@ class SkeletonGraph(object):
             oimg = self.oimg
             self.dfe = ndi.distance_transform_cdt(oimg)
             dfe = self.dfe
-        if( self.bifurcations ):
+        if( self.bifurcations[self.currentGraphKey] ):
             nds = np.array(self.bifurcations[self.currentGraphKey])
         else:    
             nds = np.array(self.cg.nodes())
