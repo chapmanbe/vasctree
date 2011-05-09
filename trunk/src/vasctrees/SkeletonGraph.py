@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Need to select license to use
 import networkx as nx
 import numpy as np
 import sys
