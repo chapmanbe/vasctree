@@ -302,10 +302,48 @@ class SkeletonGraph(object):
                 # location of spline points
                 og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
                 # first derivative (tangent) of spline
-                og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1) )
+                og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1))
                 # second derivative (curvature) of spline
                 og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
-                
+
+    
+    def makeOrthogonalPlane(self, key):
+        for e in edges:
+            path = og[e[0]][e[1]]['path']
+            path.extend([e[1]])
+            p = [e[0]]
+            p.extend(path)
+            ae = np.array(p)
+
+        og = self.orderedGraphs[key]
+        edges = og.edges(data=True)
+        for e in edges:
+           d0 = e['d0']
+           d1 = e['d1']
+           numPoints = len(d0[0])
+           p = np.zeros((numPoints))
+
+        for i in range(numPoints):
+                   d0i = np.array((d0[0][i],d0[1][i],d0[2][i]))
+                   d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
+                   p[i] = -np.inner(d0i,d1i)
+
+        for j in range ():
+
+         if (p[i] == p):
+                 #create the plant
+                     
+              #  xs = x[i:i+5] # slice each layer
+              #  ys = y[i:i+5]
+              # zs = z[i:i+5]
+              # layer = ys[0] # since in this case they are all equal.
+
+            fig = plt.figure(0)
+
+            ax.draw(graph,xs,ys,zs)
+            fig.show()  
+          
+#def getData():
             
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
     # get the total number of connected components in the current graph
