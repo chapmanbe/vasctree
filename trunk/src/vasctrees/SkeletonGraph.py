@@ -328,9 +328,9 @@ class SkeletonGraph(object):
                    d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
                    p[i] = -np.inner(d0i,d1i)
 
-        for j in range ():
-
-         if (p[i] == p):
+        
+        #call getData()
+        # if (p[i] == p):
                  #create the plant
                      
               #  xs = x[i:i+5] # slice each layer
@@ -338,12 +338,18 @@ class SkeletonGraph(object):
               # zs = z[i:i+5]
               # layer = ys[0] # since in this case they are all equal.
 
-            fig = plt.figure(0)
+            #fig = plt.figure(0)
 
-            ax.draw(graph,xs,ys,zs)
-            fig.show()  
+            #ax.draw(graph,xs,ys,zs)
+            #fig.show()  
           
 #def getData():
+    # get data fromt the data basic,
+    # get the diamester.
+    # while loop to check all the point in the diameter range
+    # if the dot product is the same dot product. make the plant
+    
+
             
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
     # get the total number of connected components in the current graph
