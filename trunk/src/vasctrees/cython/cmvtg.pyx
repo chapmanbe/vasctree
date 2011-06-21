@@ -19,8 +19,10 @@ def measureDistToEdge(p,e):
         cdist = (p[0]-e[i][0])**2+(p[1]-e[i][1])**2+(p[2]-e[i][2])**2
         mdist = min(cdist,mdist)
     return mdist
-def mapPToEdge(p, g, verbose = True):
+def mapPToEdge(args, verbose = True):
     """takes a graph g and """
+    p = args[0]
+    g = args[1]
     ge = g.edges(data=True)
     cdef int i
     cdef int j

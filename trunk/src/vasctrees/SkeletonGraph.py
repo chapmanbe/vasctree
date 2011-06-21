@@ -16,6 +16,9 @@ import dicom
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
 
+
+import multiprocessing as mp
+
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
     to model the shape of the vasculture
@@ -327,7 +330,17 @@ class SkeletonGraph(object):
                    p[i] = -np.inner(d0i,d1i)
  
                    checkData()
-          
+    def mapVoxelsToGraph(self):
+        """maps each voxel in the original mask to a particular graph edge"""
+
+	# get the coordinates of the nonzero points of the mask that are not part of the skeleton
+	points_toMap = np.array(np.nonzero((self.oimg-self.img)[::-1].transpose().astype(np.int32)
+	pool = mp.Pool(mp.cpu_count())
+	cmds = [(points_toMap[i,:],self.cg)) for i in xrange(points_toMap.shape[0])]
+	for
+	results = pool.map_async(cmvtg.mapPToEdge, cmds)
+
+      
     def checkData():
         """ get data from the data basic,
             get the diameter.
