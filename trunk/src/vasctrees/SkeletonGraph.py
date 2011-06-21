@@ -363,7 +363,7 @@ class SkeletonGraph(object):
                  else:
                         j += 1
            except Exception:
-                print "index out of bound"
+                print "index out of bound  "
                 
     
           
