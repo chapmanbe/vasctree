@@ -4,15 +4,15 @@ import networkx as nx
 import numpy as np
 import sys
 import cPickle
-import imageTools.ITKUtils.io as io
 import os
 import imageTools.browse.a3d as a3d
-import itk
+#import itk
 import subprocess
 import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import math
+import dicom
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
 
@@ -21,8 +21,7 @@ class SkeletonGraph(object):
     to model the shape of the vasculture
     img must be an ITK image"""
     def __init__(self, img):
-        self.img = itk.PyBuffer.IUC3.GetArrayFromImage(img)
-        self.spacing = img.GetSpacing()
+        self.spacing = (1,1,1)
         self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
@@ -31,6 +30,7 @@ class SkeletonGraph(object):
         self.currentGraphKey = 0
         self.Dim3Crds=[]
         self.Dim3={}
+        self.img = img
         self.oimg = None
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
@@ -40,11 +40,9 @@ class SkeletonGraph(object):
         return nodes[rootInd]
     def __setCurrentGraphKey(self, key): #for counting through the graphs, tells you the graph currently being produced or looped through
         self.currentGraphKey = key
-    def setOriginalImage(self,img=None, fname= None):
-        if( img ):
+    def setOriginalImage(self,img=None):
+        if( img!= None ):
             self.oimg = img
-        elif( fname ):
-            self.oimg = io.readImage(fname,imgMode='uchar',returnITK=False)
     def setCurrentGraph(self, key = None):
         """can choose to loop through a specific points neighbors by choosing that graph"""
         if( key != None ):
@@ -327,30 +325,48 @@ class SkeletonGraph(object):
                    d0i = np.array((d0[0][i],d0[1][i],d0[2][i]))
                    d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
                    p[i] = -np.inner(d0i,d1i)
-
-        
-        #call getData()
-        # if (p[i] == p):
-                 #create the plant
-                     
-              #  xs = x[i:i+5] # slice each layer
-              #  ys = y[i:i+5]
-              # zs = z[i:i+5]
-              # layer = ys[0] # since in this case they are all equal.
-
-            #fig = plt.figure(0)
-
-            #ax.draw(graph,xs,ys,zs)
-            #fig.show()  
+ 
+                   checkData()
           
-#def getData():
-    # get data fromt the data basic,
-    # get the diamester.
-    # while loop to check all the point in the diameter range
-    # if the dot product is the same dot product. make the plant
-    
+    def checkData():
+        """ get data from the data basic,
+            get the diameter.
+            while loop to check all the point in the diameter range
+            if the dot product is the same dot product. make the plant
+        """    
+        img = dicom.read_file("57_pulm_vasc_seg_clean_median_True_closing_True_kernel_1_1_1_1.dcm")
+        pdata = img.pixel_array
+                
+        inRange = pdata.max(axis =0)
+        #find the closest point to d0
+        #  the 
+        if (j < d0 and j > d0[2]):
+              
+         while(inRange):
+           try:
+               for j in range(inRange):
+                 d0j = np.array((d0[0][j],d0[1][j],d0[2][j]))
+                 d1j = np.array((d1[0][j],d1[1][j],d1[2][j]))
+                 newp[j] = -np.inner(d0j,d1j)
+                 
+                 if( newp[j] == p[i] ):
+                     
+                  #  xs = x[i:i+5] # slice each layer
+                    ys = y[i:i+5]
+                  #  zs = z[i:i+5]
+                  #  layer = ys[0] # since in this case they are all equal.
 
-            
+                   # fig = plt.figure(0)
+
+                    #ax.draw(graph,xs,ys,zs)
+                   # fig.show() 
+                 else:
+                        j += 1
+           except Exception, error:
+                print "index out of bound", error
+                
+    
+          
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
     # get the total number of connected components in the current graph
     
