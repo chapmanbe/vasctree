@@ -362,8 +362,8 @@ class SkeletonGraph(object):
                    # fig.show() 
                  else:
                         j += 1
-           except Exception, error:
-                print "index out of bound", error
+           except Exception:
+                print "index out of bound"
                 
     
           
