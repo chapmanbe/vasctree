@@ -1,7 +1,7 @@
 import numpy as np
-cimport numpy as np
+
 import cPickle
-import numpy as np
+cimport numpy as np
 import networkx as nx
 import math
 
