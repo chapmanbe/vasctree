@@ -13,11 +13,10 @@ import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import math
 import dicom
+import multiprocessing as mp
+
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
-
-
-import multiprocessing as mp
 
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
@@ -329,55 +328,32 @@ class SkeletonGraph(object):
                    d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
                    p[i] = -np.inner(d0i,d1i)
  
-                   checkData()
+                   
+
     def mapVoxelsToGraph(self):
         """maps each voxel in the original mask to a particular graph edge"""
 
 	# get the coordinates of the nonzero points of the mask that are not part of the skeleton
-	points_toMap = np.array(np.nonzero((self.oimg-self.img)[::-1].transpose().astype(np.int32)
-	pool = mp.Pool(mp.cpu_count())
-	cmds = [(points_toMap[i,:],self.cg)) for i in xrange(points_toMap.shape[0])]
-	for
+	points_toMap = np.array(np.nonzero((self.oimg-self.img)[::-1].transpose().astype(np.int32)))
+        pool = mp.Pool(mp.cpu_count())
+	cmds = [(points_toMap[i,:],self.cg) for i in xrange(points_toMap.shape[0])]
+       	for
 	results = pool.map_async(cmvtg.mapPToEdge, cmds)
+        """ need to add checking for later on"""
 
-      
-    def checkData():
-        """ get data from the data basic,
-            get the diameter.
-            while loop to check all the point in the diameter range
-            if the dot product is the same dot product. make the plant
-        """    
-        img = dicom.read_file("57_pulm_vasc_seg_clean_median_True_closing_True_kernel_1_1_1_1.dcm")
-        pdata = img.pixel_array
-                
-        inRange = pdata.max(axis =0)
-        #find the closest point to d0
-        #  the 
-        if (j < d0 and j > d0[2]):
-              
-         while(inRange):
-           try:
-               for j in range(inRange):
-                 d0j = np.array((d0[0][j],d0[1][j],d0[2][j]))
-                 d1j = np.array((d1[0][j],d1[1][j],d1[2][j]))
-                 newp[j] = -np.inner(d0j,d1j)
+    def comapreVoxelsToGraph(self):
+
+        # comapre the current point with the center -p
+        for j in results:
+        d0j = np.array((d0[0][j],d0[1][j],d0[2][j]))
+        d1j = np.array((d1[0][j],d1[1][j],d1[2][j]))
+        newp[j] = -np.inner(d0j,d1j)
                  
-                 if( newp[j] == p[i] ):
-                     
-                  #  xs = x[i:i+5] # slice each layer
-                    ys = y[i:i+5]
-                  #  zs = z[i:i+5]
-                  #  layer = ys[0] # since in this case they are all equal.
-
-                   # fig = plt.figure(0)
-
-                    #ax.draw(graph,xs,ys,zs)
-                   # fig.show() 
-                 else:
-                        j += 1
-           except Exception:
-                print "index out of bound  "
-                
+        if(newp[j] == p[i]):
+            ys = y[i:i+5]
+                 
+        else:
+             j += 1
     
           
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
