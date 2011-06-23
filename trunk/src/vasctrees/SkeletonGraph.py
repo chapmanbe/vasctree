@@ -333,24 +333,26 @@ class SkeletonGraph(object):
     def mapVoxelsToGraph(self):
         """maps each voxel in the original mask to a particular graph edge"""
 
-	# get the coordinates of the nonzero points of the mask that are not part of the skeleton
-	points_toMap = np.array(np.nonzero((self.oimg-self.img)[::-1].transpose().astype(np.int32)))
+        # get the coordinates of the nonzero points of the mask that are not part of the skeleton
+        points_toMap = np.array(np.nonzero(self.oimg-self.img)[::-1]).transpose().astype(np.int32)
         pool = mp.Pool(mp.cpu_count())
-	cmds = [(points_toMap[i,:],self.cg) for i in xrange(points_toMap.shape[0])]
-       	
+        cmds = [(points_toMap[i,:],self.cg) for i in xrange(points_toMap.shape[0])]
+        
         maskpoints = np.array()
         #for
-	results = pool.map_async(cmvtg.mapPToEdge, cmds)
-
+        results = pool.map_async(cmvtg.mapPToEdge, cmds)
+        
         maskpoints = np.array()
-
+        
         getList = get(key,[])
         resultList = results.get()
-	eg = self.cg.set_edges(data = Ture)
-	for r in resultList:
-	    e = eg [r[1]]
-	    mappedPts = e[2].get(mappedPts.mappedPts.append(r[0])
-	    e[2][key] = mapppedPts
+        eg = self.cg.edges(data = Ture)
+        for r in resultList:
+            # r is a tuple of the point and the edge mapped to by that point
+            e = eg [r[1]]
+            mappedPts = e[2].get("mappedPts",[])
+            mapppedPts.append(r[0])
+            e[2]["mappedPts"] = mappedPts
 
 
         

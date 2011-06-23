@@ -27,21 +27,26 @@ def mapPToEdge(args, verbose = True):
     cdef int i
     cdef int j
     cdef int k
-    cdef int minEdge 
+    #cdef int minEdge
     cdef int lsize = len(ge)
     cdef float cdist = 0.0
     cdef float mdist = 0.0
-    if( len(ge[0][2]['path'])>1):
-        print len(ge[0][2]['path'])
-        mdist = measureDistToEdge(p,ge[0][2]['path'])
-    minEdge = 0
-    for j in xrange(1,lsize):
+    cdef int ii = 0
+    while(True):
+        if( len(ge[ii][2]['path'])>1):
+            #print len(ge[0][2]['path'])
+            mdist = measureDistToEdge(p,ge[ii][2]['path'])
+            minEdge = (ge[ii][0],ge[ii][1])
+            break
+        else:
+            ii += 1
+    for j in xrange(ii+1,lsize):
         if( len(ge[j][2]['path'])>1 ):
             #print len(ge[j][2]['path'])
             cdist = measureDistToEdge(p,ge[j][2]['path'])
             if( cdist < mdist ):
                 mdist = cdist
-                minEdge = j
+                minEdge = (ge[j][0],ge[j][1])
     
     return p,minEdge
 
