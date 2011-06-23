@@ -43,7 +43,7 @@ def mapPToEdge(args, verbose = True):
                 mdist = cdist
                 minEdge = j
     
-    return minEdge
+    return p,minEdge
 
 def getGraphsFromSkeleton(np.ndarray[np.uint8_t, ndim=3] mask,
                           np.ndarray[np.int32_t, ndim=2] crds):

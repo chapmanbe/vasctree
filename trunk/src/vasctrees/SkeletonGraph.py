@@ -328,7 +328,7 @@ class SkeletonGraph(object):
                    d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
                    p[i] = -np.inner(d0i,d1i)
  
-                   
+                           
 
     def mapVoxelsToGraph(self):
         """maps each voxel in the original mask to a particular graph edge"""
@@ -337,22 +337,45 @@ class SkeletonGraph(object):
 	points_toMap = np.array(np.nonzero((self.oimg-self.img)[::-1].transpose().astype(np.int32)))
         pool = mp.Pool(mp.cpu_count())
 	cmds = [(points_toMap[i,:],self.cg) for i in xrange(points_toMap.shape[0])]
-       	for
+       	
+        maskpoints = np.array()
+        #for
 	results = pool.map_async(cmvtg.mapPToEdge, cmds)
+
+        maskpoints = np.array()
+
+        getList = get(key,[])
+        resultList = results.get()
+	eg = self.cg.set_edges(data = Ture)
+	for r in resultList:
+	    e = eg [r[1]]
+	    mappedPts = e[2].get(mappedPts.mappedPts.append(r[0])
+	    e[2][key] = mapppedPts
+
+
+        
+
+
+
+
         """ need to add checking for later on"""
 
-    def comapreVoxelsToGraph(self):
+        def comapreVoxelsToGraph(self):
 
         # comapre the current point with the center -p
         for j in results:
-        d0j = np.array((d0[0][j],d0[1][j],d0[2][j]))
-        d1j = np.array((d1[0][j],d1[1][j],d1[2][j]))
-        newp[j] = -np.inner(d0j,d1j)
+          d0j = np.array((d0[0][j],d0[1][j],d0[2][j]))
+          d1j = np.array((d1[0][j],d1[1][j],d1[2][j]))
+          newp[j] = -np.inner(d0j,d1j)
                  
-        if(newp[j] == p[i]):
-            ys = y[i:i+5]
-                 
-        else:
+          if(newp[j] == p[i]):
+            og= setOriginalImage(self,img=None)
+            
+          return og
+          
+          
+               
+          else:
              j += 1
     
           
