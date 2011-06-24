@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import math
 import dicom
 import multiprocessing as mp
-
+import cPickle
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
 
@@ -327,42 +327,41 @@ class SkeletonGraph(object):
                    d0i = np.array((d0[0][i],d0[1][i],d0[2][i]))
                    d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
                    p[i] = -np.inner(d0i,d1i)
- 
-                           
+                
 
-    def mapVoxelsToGraph(self):
+    def mapVoxelsToGraph(oimg,img, cg):
         """maps each voxel in the original mask to a particular graph edge"""
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
-        points_toMap = np.array(np.nonzero(self.oimg-self.img)[::-1]).transpose().astype(np.int32)
+        points_toMap = np.array(np.nonzero(oimg-img)[::-1]).transpose().astype(np.int32)
         pool = mp.Pool(mp.cpu_count())
-        cmds = [(points_toMap[i,:],self.cg) for i in xrange(points_toMap.shape[0])]
-        
-        maskpoints = np.array()
-        #for
+        cmds = [(points_toMap[i,:],cg) for i in xrange(points_toMap.shape[0])]
+    
         results = pool.map_async(cmvtg.mapPToEdge, cmds)
-        
-        maskpoints = np.array()
-        
-        getList = get(key,[])
+        #print "map points to edges"
+        #t0 = time.time()
         resultList = results.get()
-        eg = self.cg.edges(data = Ture)
+        #print "time to map points is %f"%(time.time()-t0)
+        eg = cg.edges(data = True)
+        #print "assign mapped points to edge data structure"
+        #print "number of results is %s"%len(resultList)
+        #t0 = time.time()
+        mdata = {}
+        for e in cg.edges():
+           # print e
+           mdata[e] = []
         for r in resultList:
-            # r is a tuple of the point and the edge mapped to by that point
-            e = eg [r[1]]
-            mappedPts = e[2].get("mappedPts",[])
-            mapppedPts.append(r[0])
-            e[2]["mappedPts"] = mappedPts
+        # r is a tuple of the point and the edge mapped to by that point        
+           mdata[r[1]].append(r[0])
+        for e in mdata.keys():
+           cg[e[0]][e[1]]['mappedPoints'] = np.array(mdata[e])
+        #print "time to fill edge structures is %f"%(time.time()-t0)
+        for e in mdata.keys():
+           cg[e[0]][e[1]]['mappedPoints'].shape
+        return 
 
 
-        
-
-
-
-
-        """ need to add checking for later on"""
-
-        def comapreVoxelsToGraph(self):
+    def comapreVoxelsToGraph(self):
 
         # comapre the current point with the center -p
         for j in results:
@@ -373,10 +372,8 @@ class SkeletonGraph(object):
           if(newp[j] == p[i]):
             og= setOriginalImage(self,img=None)
             
-          return og
+            return og
           
-          
-               
           else:
              j += 1
     

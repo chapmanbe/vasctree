@@ -27,7 +27,7 @@ def mapPToEdge(args, verbose = True):
     cdef int i
     cdef int j
     cdef int k
-    #cdef int minEdge
+    cdef tuple minEdge
     cdef int lsize = len(ge)
     cdef float cdist = 0.0
     cdef float mdist = 0.0
