@@ -5,14 +5,11 @@ import numpy as np
 import sys
 import cPickle
 import os
-import imageTools.browse.a3d as a3d
-#import itk
 import subprocess
 import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import math
-import dicom
 import multiprocessing as mp
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
@@ -360,9 +357,8 @@ class SkeletonGraph(object):
                 d1s = e[2]['d1']
                 ps  = e[2]['p']
                 d0s = e[2]['d0']
-                numPoints = len(d1s[0]) # get the number of points on the fitted edge
-                cmds = [((d1s[0][i],d1s[1][i],d1s[2][i]),
-                         ps[i],mps,i) for i in range(numPoints)]
+                numPoints = len(mps) # get the number of points on the fitted edge
+                cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
                 results = []
                 for c in cmds:
                     r = checkInPlane(c)
@@ -370,10 +366,12 @@ class SkeletonGraph(object):
                 #pool = mp.Pool(mp.cpu_count())
                 #results = pool.map_async(checkInPlane,cmds).get()
                 for r in results:
-                    planePoints[r[0]] = r[1]
+                    in_plane = planePoints.get(r[0],[])
+                    in_plane.append(r[1])
+                    planePoints[r[0]] = in_plane
             e[2]["planePoints"] = planePoints
 
-def checkInPlane(args,tolerance = 0.0001):
+def checkInPlane(args):
     """args: tuple of the following values
     args[0]: the normal vector for the plane (d1)
     args[1]: the residual for the plane (p)
@@ -384,14 +382,22 @@ def checkInPlane(args,tolerance = 0.0001):
     Plane is defined with the Hessian normal form
 
     """
-    d1 = args[0]
-    p  = args[1]
-    mps = args[2] 
-    inPlane = []
-    for pnt in mps:
-        if( abs(-np.inner(d1,pnt) - p) < tolerance ):
-            inPlane.append(pnt)
-    return args[3],inPlane
+    d1s = args[0]
+    ps  = args[1]
+    pnt = args[2] 
+    numPoints = len(p)
+    d1 = (d1s[0][0],d1s[1][0],d1s[2][0])
+    p = ps[0]
+    min_diff = abs(-np.innder(d1,pnt)-p)
+    min_index = 0
+    for i in xrange(1,numPoints):
+        d1 = (d1s[0][i],d1s[1][i],d1s[2][i])
+        p = ps[i]
+        diff = abs(-np.inner(d1,pnt) - p)
+        if( diff < min_diff ):
+            min_diff = diff
+            min_index = 0
+    return min_index,pnt,min_diff
 def computeResidue(args):
     d0 = args[0]
     d1 = args[1]
