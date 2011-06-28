@@ -345,12 +345,14 @@ class SkeletonGraph(object):
         return 
 
 
-    def assignMappedPointsToPlanes(self):
+    def assignMappedPointsToPlanes(self, verbose=True):
         """takes the mapped points associated with each edge and maps them
         to the orthogonal planes associated with specific points on the fitted
         path"""
         edges = self.cg.edges(data = True)
         for e in edges:
+            if( verbose ):
+                print "processing edge %s->%s"%(e[0],e[1])
             planePoints = {}
             if( e[2].has_key("mappedPoints") ):
                 mps = e[2]['mappedPoints']
@@ -360,15 +362,16 @@ class SkeletonGraph(object):
                 numPoints = len(mps) # get the number of points on the fitted edge
                 cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
                 results = []
-                for c in cmds:
-                    r = checkInPlane(c)
-                    results.append(c)
-                #pool = mp.Pool(mp.cpu_count())
-                #results = pool.map_async(checkInPlane,cmds).get()
-                for r in results:
-                    in_plane = planePoints.get(r[0],[])
-                    in_plane.append(r[1])
-                    planePoints[r[0]] = in_plane
+                #for c in cmds:
+                    #    r = checkInPlane(c)
+                    #    results.append(r)
+                pool = mp.Pool(mp.cpu_count())
+                results = pool.map_async(cmvtg.checkInPlane,cmds).get()
+                planePoints = cmvtg.mapPlaneResults(results)
+                #for r in results:
+                    #    in_plane = planePoints.get(r[0],[])
+                    #    in_plane.append(r[1])
+                    #    planePoints[r[0]] = in_plane
             e[2]["planePoints"] = planePoints
 
 def checkInPlane(args):
@@ -385,10 +388,10 @@ def checkInPlane(args):
     d1s = args[0]
     ps  = args[1]
     pnt = args[2] 
-    numPoints = len(p)
+    numPoints = len(ps)
     d1 = (d1s[0][0],d1s[1][0],d1s[2][0])
     p = ps[0]
-    min_diff = abs(-np.innder(d1,pnt)-p)
+    min_diff = abs(-np.inner(d1,pnt)-p)
     min_index = 0
     for i in xrange(1,numPoints):
         d1 = (d1s[0][i],d1s[1][i],d1s[2][i])
@@ -396,7 +399,7 @@ def checkInPlane(args):
         diff = abs(-np.inner(d1,pnt) - p)
         if( diff < min_diff ):
             min_diff = diff
-            min_index = 0
+            min_index = i
     return min_index,pnt,min_diff
 def computeResidue(args):
     d0 = args[0]

@@ -4,8 +4,51 @@ import cPickle
 cimport numpy as np
 import networkx as nx
 import math
+def mapPlaneResults(results):
+    planePoints = {}
+    for r in results:
+        in_plane = planePoints.get(r[0],[])
+        in_plane.append(r[1])
+        planePoints[r[0]] = in_plane
+    return planePoints
+def _checkInPlane_ip(np.ndarray[np.float64_t, ndim=2] d1s,
+                     np.ndarray[np.float32_t, ndim=1] ps,
+                     np.ndarray[np.int32_t, ndim=1] pnt):
+    cdef int i
+    cdef int min_index
+    cdef float min_diff
+    cdef float diff
+    cdef int numPoints
+    cdef float p
+    numPoints = len(ps)
+    d1 = (d1s[0][0],d1s[1][0],d1s[2][0])
+    p = ps[0]
+    min_diff = abs(-np.inner(d1,pnt)-p)
+    min_index = 0
+    for i in xrange(1,numPoints):
+        d1 = (d1s[0][i],d1s[1][i],d1s[2][i])
+        p = ps[i]
+        diff = abs(-np.inner(d1,pnt) - p)
+        if( diff < min_diff ):
+            min_diff = diff
+            min_index = i
+    return min_index,pnt,min_diff
+def checkInPlane(args):
+    """args: tuple of the following values
+    args[0]: the normal vectors for the planes (d1)
+    args[1]: the residuals for the planes (p)
+    args[2]: the point to maps
+    
+    Plane is defined with the Hessian normal form
 
-def measureDistToEdge(p,e):
+    """
+
+    d1s = args[0]
+    ps  = args[1]
+    pnt = args[2] 
+    return _checkInPlane_ip(d1s,ps,pnt)
+
+def measureDistToEdge(np.ndarray[np.int32_t, ndim=1] p,e):
     """p a 3D point stored in a numpy array
     e an edge stored in ???
     """
