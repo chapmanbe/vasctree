@@ -306,33 +306,29 @@ class SkeletonGraph(object):
                 og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
 
     
-    def makeOrthogonalPlane(self, key):
-        for e in edges:
-            path = og[e[0]][e[1]]['path']
-            path.extend([e[1]])
-            p = [e[0]]
-            p.extend(path)
-            ae = np.array(p)
-
-        og = self.orderedGraphs[key]
+    def defineOrthogonalPlanes(self):
+        og = self.cg
         edges = og.edges(data=True)
         for e in edges:
-           d0 = e['d0']
-           d1 = e['d1']
-           numPoints = len(d0[0])
-           p = np.zeros((numPoints))
+            if( e[2].has_key('d0') ):
+                d0 = e[2]['d0']
+                d1 = e[2]['d1']
+                numPoints = len(d0[0])
+                p = np.zeros((numPoints),dtype=np.float32)
+                pool = mp.Pool(mp.cpu_count())
+                cmds = [((d0[0][i],d0[1][i],d0[2][i]),
+                         (d1[0][i],d1[1][i],d1[2][i]),
+                         i) for i in xrange(numPoints)]
+                results = pool.map_async(computeResidue,cmds).get()
+                for r in results:
+                    p[r[0]] = r[1]
+                e[2]['p'] = p
 
-	   for i in range(numPoints):
-	      d0i = np.array((d0[0][i],d0[1][i],d0[2][i]))
-	      d1i = np.array((d1[0][i],d1[1][i],d1[2][i]))
-	      p[i] = -np.inner(d0i,d1i)
-           e['p'] = p   
-
-    def mapVoxelsToGraph(oimg,img, cg):
-        """maps each voxel in the original mask to a particular graph edge"""
+    def mapVoxelsToGraph(self, points_toMap):
+        """maps each voxel specified in points_toMap to a particular graph edge"""
+        cg = self.cg
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
-        points_toMap = np.array(np.nonzero(oimg-img)[::-1]).transpose().astype(np.pint32)
         pool = mp.Pool(mp.cpu_count())
         cmds = [(points_toMap[i,:],cg) for i in xrange(points_toMap.shape[0])]
     
@@ -352,43 +348,56 @@ class SkeletonGraph(object):
         return 
 
 
-    def comapreVoxelsToGraph(self):
-        
-        og= data['orderedGraphs'][(1,'test')]
-        edges = og.edges(data = True)
+    def assignMappedPointsToPlanes(self):
+        """takes the mapped points associated with each edge and maps them
+        to the orthogonal planes associated with specific points on the fitted
+        path"""
+        edges = self.cg.edges(data = True)
         for e in edges:
-            shortestpd= e[2]['mappedPoints']
-	    d1 = e[2]['d1']
-	    p = e[2]['p']
-	    numPoints = len(d1[0]) # get the number of points on the fitted edge
-            # comapre the current point with the center -p
-            for i in range(numPoints):
-                computeDistance(self)
-    	        #d1i = np.array((d1[0][i],d1[1],[i],d1[2][i]))
-		#pi = p[i]
-		                              
-def computeDistance(self,tolerance = 0.0001):
+            planePoints = {}
+            if( e[2].has_key("mappedPoints") ):
+                mps = e[2]['mappedPoints']
+                d1s = e[2]['d1']
+                ps  = e[2]['p']
+                d0s = e[2]['d0']
+                numPoints = len(d1s[0]) # get the number of points on the fitted edge
+                cmds = [((d1s[0][i],d1s[1][i],d1s[2][i]),
+                         ps[i],mps,i) for i in range(numPoints)]
+                results = []
+                for c in cmds:
+                    r = checkInPlane(c)
+                    results.append(c)
+                #pool = mp.Pool(mp.cpu_count())
+                #results = pool.map_async(checkInPlane,cmds).get()
+                for r in results:
+                    planePoints[r[0]] = r[1]
+            e[2]["planePoints"] = planePoints
 
-    pool = mp.Pool(mp.cpu_count())
+def checkInPlane(args,tolerance = 0.0001):
+    """args: tuple of the following values
+    args[0]: the normal vector for the plane (d1)
+    args[1]: the residual for the plane (p)
+    args[2]: the points to maps
+    args[3]: index number
+    tolerance: the numeric tolerance defined for the floating point equality
     
-    #results = pool.map_async(cmvtg.mapPToEdge, cmds)
-    #resultList = results.get()
-     #   eg = cg.edges(data = True)
-      #  mdata = {}
-        for i in range(numPoints):
+    Plane is defined with the Hessian normal form
 
-	 d1i = mp.Pool(d1[0][i],d1[1][i],d1[2][i])
-         pi = p[i]
-         i_plane_pnts = []
-
-	 for pnt in shortestpd:
-              if( abs(-np.inner(d1i,pnt) - pi) < tolerance ):
-		   i_plane_pnts.append(pnt)
-		   # compute some statistics across i_plane_pnts
-		   # for exmaple, average distance form d0 or max distance, min distance, etc.
-                   avg = i_plane_pnts.sum()/i_plane_pnts.len()
-
-          
+    """
+    d1 = args[0]
+    p  = args[1]
+    mps = args[2] 
+    inPlane = []
+    for pnt in mps:
+        if( abs(-np.inner(d1,pnt) - p) < tolerance ):
+            inPlane.append(pnt)
+    return args[3],inPlane
+def computeResidue(args):
+    d0 = args[0]
+    d1 = args[1]
+    i = args[2]
+    p = -np.inner(d0,d1)
+    return i,p
 def pruneUndirectedBifurcations(cg,bifurcations, verbose= True):    
     # get the total number of connected components in the current graph
     
