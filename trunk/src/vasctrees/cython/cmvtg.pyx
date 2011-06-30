@@ -104,7 +104,7 @@ def getGraphsFromSkeleton(np.ndarray[np.uint8_t, ndim=3] mask,
     cdef int szx = mask.shape[2]-1
     
     cdef Py_ssize_t l, i, j, k
-    G = nx.Graph()
+    G = nx.Graph(spacing=None,origin=None,orientation=None)
     for l in xrange(ncrds):
         crd = (crds[l,0],crds[l,1],crds[l,2])
         s = (max(0,crd[0]-1),max(0,crd[1]-1),max(0,crd[2]-1))
@@ -133,7 +133,7 @@ def findEndpointsBifurcations(cg):
 
 def traceEndpoints(cg, endpoints, bifurcations, currentRoot):
     """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
-    og = nx.DiGraph()
+    og = nx.DiGraph(spacing=None, origin=None, orientation=None)
     cdef int i = 0
     for e in endpoints:
         plen, path = nx.bidirectional_dijkstra(cg, currentRoot, e)

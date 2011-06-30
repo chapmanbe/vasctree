@@ -21,18 +21,18 @@ class SkeletonGraph(object):
     def __init__(self, img = None, 
                  spacing = None, 
                  origin = None, orientation = None):
-        if( spacing ):
+        if( spacing != None ):
             self.spacing = np.array(spacing, dtype=np.float32)
         else:
             self.spacing = np.ones(3, dtype=np.float32)
-        if( origin ):
+        if( origin != None ):
             self.origin = np.array(origin, dtype=np.float32)
         else:
             self.origin = np.zeros(3, dtype=np.float32)
-        if( orientation ):
+        if( orientation != None ):
             self.orientation = np.array(orientation, dtype=np.float32)
         else:
-            self.orientation
+            self.orientation = None
         self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
@@ -45,9 +45,9 @@ class SkeletonGraph(object):
         self.oimg = None
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
-        g["spacing"] = self.spacing
-        g["origin"] = self.origin
-        g["orientation"] = self.orientation
+        g.graph["spacing"] = self.spacing
+        g.graph["origin"] = self.origin
+        g.graph["orientation"] = self.orientation
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
@@ -186,7 +186,7 @@ class SkeletonGraph(object):
         return (nds[mi,0],nds[mi,1],nds[mi,2])
     def traceEndpoints(self, key=0):
         """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
-        og = nx.DiGraph()
+        og = nx.DiGraph(spacing=None, origin=None, orientation=None)
         self._populateImageFeaturesToGraph(og)
         currentRoot = self.roots[(self.currentGraphKey,key)]
         endpoints = self.endpoints[self.currentGraphKey]
@@ -295,12 +295,12 @@ class SkeletonGraph(object):
         """
         return self.origin + self.spacing*np.array(crd,dtype=np.float32)
     def getNodesWorldCoordinates(self,g):
-        nodes = g.get_nodes(data=True)
+        nodes = g.nodes(data=True)
         for n in nodes:
             wcrd = self._transformToWorld(n[0])
             n[1]["wcrd"] = wcrd
     def getEdgesWorldCoordinates(self,g):
-        edges = g.get_edges(data=True)
+        edges = g.edges(data=True)
         for e in edges:
             if( not e[2].has_key("wpath") ):
                 wpath = []
@@ -326,7 +326,7 @@ class SkeletonGraph(object):
             path = og[e[0]][e[1]]['wpath']
             pstart=og.node[e[0]]['wcrd']
             pend = og.node[e[1]]['wcrd']
-            path.extend([e[1]["wcrd"]])
+            path.extend([pend])
             p = [pstart]
             p.extend(path)
             ae = np.array(p)
