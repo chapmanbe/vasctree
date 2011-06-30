@@ -17,9 +17,22 @@ from scipy.interpolate.fitpack import splprep
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
     to model the shape of the vasculture
-    img must be an ITK image"""
-    def __init__(self, img):
-        self.spacing = (1,1,1)
+    img must be an numpy array"""
+    def __init__(self, img = None, 
+                 spacing = None, 
+                 origin = None, orientation = None):
+        if( spacing ):
+            self.spacing = np.array(spacing, dtype=np.float32)
+        else:
+            self.spacing = np.ones(3, dtype=np.float32)
+        if( origin ):
+            self.origin = np.array(origin, dtype=np.float32)
+        else:
+            self.origin = np.zeros(3, dtype=np.float32)
+        if( orientation ):
+            self.orientation = np.array(orientation, dtype=np.float32)
+        else:
+            self.orientation
         self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
@@ -30,13 +43,20 @@ class SkeletonGraph(object):
         self.Dim3={}
         self.img = img
         self.oimg = None
+    def _populateImageFeaturesToGraph(self,g):
+        """transfer the image features to the graph g"""
+        g["spacing"] = self.spacing
+        g["origin"] = self.origin
+        g["orientation"] = self.orientation
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
         nlocs = np.array(nodes)
         rootInd = ((nlocs-val)**2).sum(axis=1).argmin()
         return nodes[rootInd]
-    def __setCurrentGraphKey(self, key): #for counting through the graphs, tells you the graph currently being produced or looped through
+    def __setCurrentGraphKey(self, key): 
+        """for counting through the graphs, tells you the graph currently 
+        being produced or looped through"""
         self.currentGraphKey = key
     def setOriginalImage(self,img=None):
         if( img!= None ):
@@ -71,6 +91,7 @@ class SkeletonGraph(object):
             crds = np.array(np.nonzero(m)[::-1]).transpose().astype(np.int32)
             if( verbose ): print "generating graph from skeleton"
             g = cmvtg.getGraphsFromSkeleton(m,crds)
+            self._populateImageFeaturesToGraph(g)
             if( verbose ):
                 self.cg = g
                 self.viewCurrentGraph()
@@ -166,6 +187,7 @@ class SkeletonGraph(object):
     def traceEndpoints(self, key=0):
         """Uses the bidirectional dijkstra to traceback the paths from the endpoints"""
         og = nx.DiGraph()
+        self._populateImageFeaturesToGraph(og)
         currentRoot = self.roots[(self.currentGraphKey,key)]
         endpoints = self.endpoints[self.currentGraphKey]
         bifurcations = self.bifurcations[self.currentGraphKey]
@@ -233,8 +255,6 @@ class SkeletonGraph(object):
                 newEdge = p1+[n]+p2
                 og.remove_node(n)
                 og.add_edge(pred,succ,path=newEdge)
-                    
-     
                              
     def prunePaths(self, key, threshold=5):
         """Removes terminal paths that are considered to be too short
@@ -267,7 +287,26 @@ class SkeletonGraph(object):
                 path = g[edge[0]][edge[1]].get('path')
                 if(path):
                     vimg.flat[path] += 1000
+    def _transformToWorld(self, crd):
+        """takes the tuple crd that represents the image space location (i,j,k)
+        and returns the coordinate in world space (wcrd):
 
+        wcrd = origin + spacing*crd
+        """
+        return self.origin + self.spacing*np.array(crd,dtype=np.float32)
+    def getNodesWorldCoordinates(self,g):
+        nodes = g.get_nodes(data=True)
+        for n in nodes:
+            wcrd = self._transformToWorld(n[0])
+            n[1]["wcrd"] = wcrd
+    def getEdgesWorldCoordinates(self,g):
+        edges = g.get_edges(data=True)
+        for e in edges:
+            if( not e[2].has_key("wpath") ):
+                wpath = []
+                for p in e[2]["path"]:
+                    wpath.append(self._transformToWorld(p))
+                e[2]["wpath"] = wpath
     def fitEdges(self, key):
         """fits a least squares spline through the paths defined for the
         orderedGraph indexed by key
@@ -280,11 +319,15 @@ class SkeletonGraph(object):
         
         """
         og = self.orderedGraphs[key]
+        self.getNodesWorldCoordinates(og)
+        self.getEdgesWorldCoordinates(og)
         edges = og.edges()
         for e in edges:
-            path = og[e[0]][e[1]]['path']
-            path.extend([e[1]])
-            p = [e[0]]
+            path = og[e[0]][e[1]]['wpath']
+            pstart=og.node[e[0]]['wcrd']
+            pend = og.node[e[1]]['wcrd']
+            path.extend([e[1]["wcrd"]])
+            p = [pstart]
             p.extend(path)
             ae = np.array(p)
             
