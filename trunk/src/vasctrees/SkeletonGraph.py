@@ -22,15 +22,15 @@ class SkeletonGraph(object):
                  spacing = None, 
                  origin = None, orientation = None):
         if( spacing != None ):
-            self.spacing = np.array(spacing, dtype=np.float32)
+            self.spacing = np.array(spacing, dtype=np.float64)
         else:
-            self.spacing = np.ones(3, dtype=np.float32)
+            self.spacing = np.ones(3, dtype=np.float64)
         if( origin != None ):
-            self.origin = np.array(origin, dtype=np.float32)
+            self.origin = np.array(origin, dtype=np.float64)
         else:
-            self.origin = np.zeros(3, dtype=np.float32)
+            self.origin = np.zeros(3, dtype=np.float64)
         if( orientation != None ):
-            self.orientation = np.array(orientation, dtype=np.float32)
+            self.orientation = np.array(orientation, dtype=np.float64)
         else:
             self.orientation = None
         self.graphs = {}
@@ -277,7 +277,15 @@ class SkeletonGraph(object):
         cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
                       'orderedGraphs':self.orderedGraphs,'roots':self.roots},fo)
         
-        
+    def dump(self,fname):
+        """Use cPickle to dump the object to the file fname"""
+        fo = file(fname,"wb")
+        cPickle.dump(self,fo)
+    def load(self,fname):
+        """Use cPickle to load a stored SkeletonGraph object and set it equal to
+        self"""
+        fo = file(fname,"rb")
+        self = cPickle.load(fo)
     def insertGraphInImage(self, vimg):
         for key in self.orderedGraphs.keys():
             g = self.orderedGraphs[key]
@@ -293,7 +301,7 @@ class SkeletonGraph(object):
 
         wcrd = origin + spacing*crd
         """
-        return self.origin + self.spacing*np.array(crd,dtype=np.float32)
+        return self.origin + self.spacing*np.array(crd,dtype=np.float64)
     def getNodesWorldCoordinates(self,g):
         nodes = g.nodes(data=True)
         for n in nodes:
@@ -346,15 +354,15 @@ class SkeletonGraph(object):
                 og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
 
     
-    def defineOrthogonalPlanes(self):
-        og = self.cg
+    def defineOrthogonalPlanes(self, key):
+        og = self.orderedGraphs[key]
         edges = og.edges(data=True)
         for e in edges:
             if( e[2].has_key('d0') ):
                 d0 = e[2]['d0']
                 d1 = e[2]['d1']
                 numPoints = len(d0[0])
-                p = np.zeros((numPoints),dtype=np.float32)
+                p = np.zeros((numPoints),dtype=np.float64)
                 pool = mp.Pool(mp.cpu_count())
                 cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                          (d1[0][i],d1[1][i],d1[2][i]),
@@ -364,16 +372,16 @@ class SkeletonGraph(object):
                     p[r[0]] = r[1]
                 e[2]['p'] = p
 
-    def mapVoxelsToGraph(self, points_toMap):
+    def mapVoxelsToGraph(self, points_toMap, key):
         """maps each voxel specified in points_toMap to a particular graph edge
         points_toMap  are passed in as a Nx3 array of image coordinates (i,j,k)
         that are then converted to world coordinates (x,y,z) prior to mapping"""
-        cg = self.cg
+        cg = self.orderedGraphs[key]
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
         points = self.origin + self.spacing*points_toMap
         pool = mp.Pool(mp.cpu_count())
-        cmds = [(points_toMap[i,:],cg) for i in xrange(points_toMap.shape[0])]
+        cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
     
         results = pool.map_async(cmvtg.mapPToEdge, cmds)
         resultList = results.get()
@@ -391,11 +399,11 @@ class SkeletonGraph(object):
         return 
 
 
-    def assignMappedPointsToPlanes(self, verbose=True):
+    def assignMappedPointsToPlanes(self, key, verbose=True):
         """takes the mapped points associated with each edge and maps them
         to the orthogonal planes associated with specific points on the fitted
         path"""
-        edges = self.cg.edges(data = True)
+        edges = self.orderedGraphs[key].edges(data = True)
         for e in edges:
             if( verbose ):
                 print "processing edge %s->%s"%(e[0],e[1])
@@ -408,16 +416,9 @@ class SkeletonGraph(object):
                 numPoints = len(mps) # get the number of points on the fitted edge
                 cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
                 results = []
-                #for c in cmds:
-                    #    r = checkInPlane(c)
-                    #    results.append(r)
                 pool = mp.Pool(mp.cpu_count())
                 results = pool.map_async(cmvtg.checkInPlane,cmds).get()
                 planePoints = cmvtg.mapPlaneResults(results)
-                #for r in results:
-                    #    in_plane = planePoints.get(r[0],[])
-                    #    in_plane.append(r[1])
-                    #    planePoints[r[0]] = in_plane
             e[2]["planePoints"] = planePoints
 
 def checkInPlane(args):

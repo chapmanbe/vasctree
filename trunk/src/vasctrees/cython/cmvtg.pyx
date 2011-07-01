@@ -12,8 +12,8 @@ def mapPlaneResults(results):
         planePoints[r[0]] = in_plane
     return planePoints
 def _checkInPlane_ip(np.ndarray[np.float64_t, ndim=2] d1s,
-                     np.ndarray[np.float32_t, ndim=1] ps,
-                     np.ndarray[np.int32_t, ndim=1] pnt):
+                     np.ndarray[np.float64_t, ndim=1] ps,
+                     np.ndarray[np.float64_t, ndim=1] pnt):
     cdef int i
     cdef int min_index
     cdef float min_diff
@@ -48,7 +48,7 @@ def checkInPlane(args):
     pnt = args[2] 
     return _checkInPlane_ip(d1s,ps,pnt)
 
-def measureDistToEdge(np.ndarray[np.int32_t, ndim=1] p,e):
+def measureDistToEdge(np.ndarray[np.float64_t, ndim=1] p,e):
     """p a 3D point stored in a numpy array
     e an edge stored in ???
     """
