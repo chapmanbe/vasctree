@@ -365,10 +365,13 @@ class SkeletonGraph(object):
                 e[2]['p'] = p
 
     def mapVoxelsToGraph(self, points_toMap):
-        """maps each voxel specified in points_toMap to a particular graph edge"""
+        """maps each voxel specified in points_toMap to a particular graph edge
+        points_toMap  are passed in as a Nx3 array of image coordinates (i,j,k)
+        that are then converted to world coordinates (x,y,z) prior to mapping"""
         cg = self.cg
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
+        points = self.origin + self.spacing*points_toMap
         pool = mp.Pool(mp.cpu_count())
         cmds = [(points_toMap[i,:],cg) for i in xrange(points_toMap.shape[0])]
     
