@@ -20,7 +20,9 @@ class SkeletonGraph(object):
     img must be an numpy array"""
     def __init__(self, img = None, 
                  spacing = None, 
-                 origin = None, orientation = None):
+                 origin = None, 
+		 orientation = None,
+		 label = ''):
         if( spacing != None ):
             self.spacing = np.array(spacing, dtype=np.float64)
         else:
@@ -33,7 +35,8 @@ class SkeletonGraph(object):
             self.orientation = np.array(orientation, dtype=np.float64)
         else:
             self.orientation = None
-        self.graphs = {}
+        self.label = label 
+	self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
         self.bifurcations = {}
@@ -48,6 +51,7 @@ class SkeletonGraph(object):
         g.graph["spacing"] = self.spacing
         g.graph["origin"] = self.origin
         g.graph["orientation"] = self.orientation
+	g.graph["label"] = self.label
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
