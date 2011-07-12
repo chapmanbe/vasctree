@@ -4,7 +4,16 @@ import cPickle
 cimport numpy as np
 import networkx as nx
 import math
-def mapPlaneResults(results):
+def mapPlaneResultsWithTolerance(results):
+    cdef float tolerance = 0.03
+    planePoints = {}
+    for r in results:
+        in_plane = planePoints.get(r[0],[])
+        if( r[3] < tolerance ):
+            in_plane.append(r[1])
+        planePoints[r[0]] = in_plane
+    return planePoints
+def mapPlaneResults(results, tolerance=0.05):
     planePoints = {}
     for r in results:
         in_plane = planePoints.get(r[0],[])
@@ -20,6 +29,7 @@ def _checkInPlane_ip(np.ndarray[np.float64_t, ndim=2] d1s,
     cdef float diff
     cdef int numPoints
     cdef float p
+    cdef float tol 
     numPoints = len(ps)
     d1 = (d1s[0][0],d1s[1][0],d1s[2][0])
     p = ps[0]
@@ -32,7 +42,9 @@ def _checkInPlane_ip(np.ndarray[np.float64_t, ndim=2] d1s,
         if( diff < min_diff ):
             min_diff = diff
             min_index = i
-    return min_index,pnt,min_diff
+    tol = min_diff/abs(p) 
+    return min_index,pnt,min_diff,tol
+
 def checkInPlane(args):
     """args: tuple of the following values
     args[0]: the normal vectors for the planes (d1)

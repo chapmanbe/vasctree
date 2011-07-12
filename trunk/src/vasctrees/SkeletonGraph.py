@@ -36,7 +36,7 @@ class SkeletonGraph(object):
         else:
             self.orientation = None
         self.label = label 
-	self.graphs = {}
+        self.graphs = {}
         self.orderedGraphs = {}
         self.roots = {}
         self.bifurcations = {}
@@ -46,6 +46,7 @@ class SkeletonGraph(object):
         self.Dim3={}
         self.img = img
         self.oimg = None
+        self.reMap
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
         g.graph["spacing"] = self.spacing
@@ -259,8 +260,22 @@ class SkeletonGraph(object):
                 newEdge = p1+[n]+p2
                 og.remove_node(n)
                 og.add_edge(pred,succ,path=newEdge)
-                             
+     
+    
     def prunePaths(self, key, threshold=5):
+        """Removes terminal paths that are considered to be too short
+        to be part of the skeleton
+        
+        Can I rewrite this in a more functional way?"""
+        og = self.orderedGraphs[key]
+        root = self.roots[key]
+        min_len, min_node = getShortestTerminalNode(og)
+        if( min_len <= threshold ):
+            safelyRemoveNode(og, n, root, self.reMap)
+            self.prunePaths(key, threshold=threshold)
+
+ 
+    def prunePaths2(self, key, threshold=5):
         """Removes terminal paths that are considered to be too short
         to be part of the skeleton
         
@@ -272,8 +287,7 @@ class SkeletonGraph(object):
                 p = og.predecessors(n)[0]
                 path = og[p][n]['path']
                 if( len(path) < threshold ):
-                    og.remove_node(n)
-                    
+                    og.remove_node(n)                    
             
     def saveGraphs(self,name):
         fo = open(name,'wb')
@@ -411,6 +425,10 @@ class SkeletonGraph(object):
         for e in edges:
             if( verbose ):
                 print "processing edge %s->%s"%(e[0],e[1])
+            try:
+                e[2].pop("planePoints")
+            except KeyError:
+                pass
             planePoints = {}
             if( e[2].has_key("mappedPoints") ):
                 mps = e[2]['mappedPoints']
@@ -422,7 +440,7 @@ class SkeletonGraph(object):
                 results = []
                 pool = mp.Pool(mp.cpu_count())
                 results = pool.map_async(cmvtg.checkInPlane,cmds).get()
-                planePoints = cmvtg.mapPlaneResults(results)
+                planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
             e[2]["planePoints"] = planePoints
 
 def checkInPlane(args):
@@ -492,3 +510,45 @@ def deleteExtraEdges(cg, b):
         cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
         cg = deleteExtraEdges(cg,b)
     return cg
+def safelyRemoveNode(og,n, root, reMap):
+    """removes node n from ordered graph og. Any mappedPoints associated
+    with adjacent edges are placed in reMap to obe remapped"""
+    preds = og.predecessors(n)
+    for p in preds:
+        if( og[p][n].has_key("mappedPoints") ):
+            reMapp.append(og[p][n]["mappedPoints"])
+        og.remove_node(n)
+    safelyRemoveDegree2Nodes(og, root, reMap)
+        
+def safelyRemoveDegree2Nodes(og, root, reMap):
+    """Delete all degree 2 nodes (except for the root node if it is degree 2)"""
+    dgs = og.degree()
+    
+    for n,d in dgs.items():
+        if( d == 2 and n != root):
+            print "deleting node",n
+            pred = og.predecessors(n)[0]
+            succ = og.successors(n)[0]
+            p1 = og[pred][n]['path']
+            if( og[pred][n].has_key('mappedPoints') ):
+                reMap.append(og[pred][n]["mappedPoints"])
+            p2 = og[n][succ]['path']
+            if( og[n][succ].has_key("mappedPoints") ):
+                reMap.append(og[n][succ]["mappedPoints"])
+            newEdge = p1+[n]+p2
+            og.remove_node(n)
+            og.add_edge(pred,succ,path=newEdge)
+def getShortestTerminalNode(og):
+    dgs = og.degree()
+    for n,d in dgs.items():
+        if( d == 1 ):
+            p = og.predecessors(n)[0]
+            elen = len(og[p][n]['path'])
+            try:
+                if(elen < min_elen):
+                    min_elen = elen
+                    min_node = n
+            except NameError:
+                min_elen = p
+                min_node = n
+    return min_elen, min_node
