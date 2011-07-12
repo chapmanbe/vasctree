@@ -271,7 +271,7 @@ class SkeletonGraph(object):
         root = self.roots[key]
         min_len, min_node = getShortestTerminalNode(og)
         if( min_len <= threshold ):
-            safelyRemoveNode(og, n, root, self.reMap)
+            safelyRemoveNode(og, min_node, root, self.reMap)
             self.prunePaths(key, threshold=threshold)
 
  
@@ -349,28 +349,7 @@ class SkeletonGraph(object):
         self.getEdgesWorldCoordinates(og)
         edges = og.edges()
         for e in edges:
-            path = og[e[0]][e[1]]['wpath']
-            pstart=og.node[e[0]]['wcrd']
-            pend = og.node[e[1]]['wcrd']
-            path.extend([pend])
-            p = [pstart]
-            p.extend(path)
-            ae = np.array(p)
-            
-            if( ae.shape[0] > 3 ): # there are not enough points to fit with
-
-                s = ae.shape[0]/2.0
-
-                fit2 = splprep(ae.transpose(),task=0,full_output =1, s=s)[0]
-                u = np.array(range(ae.shape[0]+1)).\
-                        astype(np.float64)/(ae.shape[0])
-                # location of spline points
-                og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
-                # first derivative (tangent) of spline
-                og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1))
-                # second derivative (curvature) of spline
-                og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
-
+            fitEdge(og,e)
     
     def defineOrthogonalPlanes(self, key):
         og = self.orderedGraphs[key]
@@ -516,14 +495,13 @@ def safelyRemoveNode(og,n, root, reMap):
     preds = og.predecessors(n)
     for p in preds:
         if( og[p][n].has_key("mappedPoints") ):
-            reMapp.append(og[p][n]["mappedPoints"])
+            reMap.append(og[p][n]["mappedPoints"])
         og.remove_node(n)
     safelyRemoveDegree2Nodes(og, root, reMap)
         
 def safelyRemoveDegree2Nodes(og, root, reMap):
     """Delete all degree 2 nodes (except for the root node if it is degree 2)"""
     dgs = og.degree()
-    
     for n,d in dgs.items():
         if( d == 2 and n != root):
             print "deleting node",n
@@ -536,8 +514,11 @@ def safelyRemoveDegree2Nodes(og, root, reMap):
             if( og[n][succ].has_key("mappedPoints") ):
                 reMap.append(og[n][succ]["mappedPoints"])
             newEdge = p1+[n]+p2
+            # need to add wpath and then recompute d0,d1,d2
+            newWPath = og[pred][n]['wpath']+og[n][succ]['wpath']
             og.remove_node(n)
-            og.add_edge(pred,succ,path=newEdge)
+            og.add_edge(pred,succ,path=newEdge, wpath=newWPath)
+            fitEdge(og,(pred,succ))
 def getShortestTerminalNode(og):
     dgs = og.degree()
     for n,d in dgs.items():
@@ -552,3 +533,26 @@ def getShortestTerminalNode(og):
                 min_elen = p
                 min_node = n
     return min_elen, min_node
+
+def fitEdge(og,e):
+    path = og[e[0]][e[1]]['wpath']
+    #pstart=og.node[e[0]]['wcrd']
+    #pend = og.node[e[1]]['wcrd']
+    #path.extend([pend])
+    #p = [pstart]
+    #p.extend(path)
+    ae = np.array(path)
+    
+    if( ae.shape[0] > 3 ): # there are not enough points to fit with
+
+        s = ae.shape[0]/2.0
+
+        fit2 = splprep(ae.transpose(),task=0,full_output =1, s=s)[0]
+        u = np.array(range(ae.shape[0]+1)).\
+                astype(np.float64)/(ae.shape[0])
+        # location of spline points
+        og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
+        # first derivative (tangent) of spline
+        og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1))
+        # second derivative (curvature) of spline
+        og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
