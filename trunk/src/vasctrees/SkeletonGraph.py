@@ -21,8 +21,8 @@ class SkeletonGraph(object):
     def __init__(self, img = None, 
                  spacing = None, 
                  origin = None, 
-		 orientation = None,
-		 label = ''):
+                 orientation = None,
+                 label = ''):
         if( spacing != None ):
             self.spacing = np.array(spacing, dtype=np.float64)
         else:
@@ -46,7 +46,7 @@ class SkeletonGraph(object):
         self.Dim3={}
         self.img = img
         self.oimg = None
-        self.reMap
+        self.reMap = []
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
         g.graph["spacing"] = self.spacing
