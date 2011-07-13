@@ -52,7 +52,7 @@ class SkeletonGraph(object):
         g.graph["spacing"] = self.spacing
         g.graph["origin"] = self.origin
         g.graph["orientation"] = self.orientation
-	g.graph["label"] = self.label
+        g.graph["label"] = self.label
     def findNearestNode(self,val):
         """compute the distance from val to every node in the current graph. """
         nodes = self.cg.nodes()
@@ -274,7 +274,22 @@ class SkeletonGraph(object):
             safelyRemoveNode(og, min_node, root, self.reMap)
             self.prunePaths(key, threshold=threshold)
 
- 
+    def pruneSpecifiedDegreeOneNode(self,key,node):
+        """prune the specified degree one node. If node is not of degree one,
+        no steps are taken"""
+        og = self.orderedGraphs[key]
+        root = self.roots[key]
+        deg = og.degree(node)
+        if( deg != 1 ):
+            return
+        safelyRemoveNode(og, node,root,self.reMap)
+    def reportEdgeLengths(self, key, degree = None ):
+        og = self.orderedGraphs[key]
+        edges = og.edges(data=True)
+        for e in edges:
+            if( degree == None or og.degree(e[1]) == degree):
+                print "(%s,%s): path len %d"%(e[0],e[1],len(e[2]['wpath']))
+            
     def prunePaths2(self, key, threshold=5):
         """Removes terminal paths that are considered to be too short
         to be part of the skeleton
@@ -369,14 +384,32 @@ class SkeletonGraph(object):
                     p[r[0]] = r[1]
                 e[2]['p'] = p
 
-    def mapVoxelsToGraph(self, points_toMap, key):
-        """maps each voxel specified in points_toMap to a particular graph edge
-        points_toMap  are passed in as a Nx3 array of image coordinates (i,j,k)
-        that are then converted to world coordinates (x,y,z) prior to mapping"""
+    def remapVoxelsToGraph(self,key, verbose=True):
+        """take the pool of points stored in self.reMap and map them to edges
+        in the graph"""
+        if( verbose ):
+            print "remapping freed voxels to remaining edges"
+        if(not self.reMap ):
+            return
+        points_toMap = self.reMap[0]
+        for p in self.reMap[1:]:
+            points_toMap = np.concatenate((points_toMap,p),axis=0)
+        print "%d points to remap"%points_toMap.shape[0]
+        self.mapVoxelsToGraph(points_toMap,key,worldCoordinates=True, verbose=True)
+        self.reMap = []
+        
+    def mapVoxelsToGraph(self, points_toMap, key, worldCoordinates=False, verbose=False):
+        """maps each voxel specified in points_toMap to a particular graph edge.
+        points_toMap  is assumed to be a Nx3 array of image coordinates (i,j,k)
+        if worldCoordiantes=False and are converted to world coordinates (x,y,z)
+        prior to mapping. If worldCoordiantes=True the data are assumed to be a """
         cg = self.orderedGraphs[key]
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
-        points = self.origin + self.spacing*points_toMap
+        if( not worldCoordinates ):
+            points = self.origin + self.spacing*points_toMap
+        else:
+            points = points_toMap
         pool = mp.Pool(mp.cpu_count())
         cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
     
@@ -390,7 +423,18 @@ class SkeletonGraph(object):
         # r is a tuple of the point and the edge mapped to by that point        
            mdata[r[1]].append(r[0])
         for e in mdata.keys():
-           cg[e[0]][e[1]]['mappedPoints'] = np.array(mdata[e])
+            mps = cg[e[0]][e[1]].get('mappedPoints',None)
+            newmps = np.array(mdata[e])
+            print "%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1])
+            if( mps == None ):
+                cg[e[0]][e[1]]['mappedPoints'] = newmps
+            else:
+                try:
+                    if( verbose ):
+                        print "merging %d points with %d points"%(mps.shape[0],len(mdata[e]))
+                    cg[e[0]][e[1]]['mappedPoints'] = np.concatenate((mps,newmps),axis=0)
+                except Exception, error:
+                    print "failed to merge surface poitns for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
         for e in mdata.keys():
            cg[e[0]][e[1]]['mappedPoints'].shape
         return 
@@ -405,7 +449,8 @@ class SkeletonGraph(object):
             if( verbose ):
                 print "processing edge %s->%s"%(e[0],e[1])
             try:
-                e[2].pop("planePoints")
+                tmp = e[2].pop("planePoints")
+                tmp = 0
             except KeyError:
                 pass
             planePoints = {}
