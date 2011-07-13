@@ -41,7 +41,7 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4, verbose=True, de
                 (e[0],e[1],mps.shape,error)
         counter += 1
             
-    ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3)
+    ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
         
     
     
@@ -50,7 +50,20 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4, verbose=True, de
     ax.w_yaxis.set_major_locator(LinearLocator(3))
     return ax
 
-  
+def onclick(event):
+    print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+        event.button, event.x, event.y, event.xdata, event.ydata)
+def onpick(event):
+    print event.artist
+    if event.artist!=line: return True
+
+    N = len(event.ind)
+    if not N: return True
+
+
+    for subplotnum, dataind in enumerate(event.ind):
+        print subplotnum, dataind
+    return True    
 def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, degree = None, showSurface=True, root=None):
     """view an ordered graph generated using the SkeltonGraph class"""
     try:
@@ -60,6 +73,8 @@ def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=T
         print "generating edge only view"
         fig2 = pp.figure(fignum+1)
         ax2 = get3DPlot(fig2, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,verbose=verbose,degree=degree,showSurface=False,root=root)
+        #cid = fig2.canvas.mpl_connect('button_press_event', onclick)
+        fig2.canvas.mpl_connect('pick_event', onpick)
         pp.show()
     except Exception, error:
         print "failed in viewGraph2", error
