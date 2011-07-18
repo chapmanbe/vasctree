@@ -9,5 +9,6 @@ setup(name='vasctree',
       #py_modules = pyn,
       packages=find_packages('src'),
       package_dir={'':'src'},
-      install_requires = ['python>=2.6','numpy>=1.3','scipy>=0.7','networkx>=1.0.dev1492'],      
+      install_requires = ['python>=2.6','numpy>=1.3','networkx'],
+      scripts = ['src/vasctrees/scripts/editGraph.py',],
      )
