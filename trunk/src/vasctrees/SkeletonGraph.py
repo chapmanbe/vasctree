@@ -47,8 +47,10 @@ class SkeletonGraph(object):
         self.img = img
         self.oimg = None
         self.reMap = []
+        self.deletedEdges = {}
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
+        g.graph["imgSize"] = self.img.shape
         g.graph["spacing"] = self.spacing
         g.graph["origin"] = self.origin
         g.graph["orientation"] = self.orientation
@@ -194,6 +196,7 @@ class SkeletonGraph(object):
         og = nx.DiGraph(spacing=None, origin=None, orientation=None)
         self._populateImageFeaturesToGraph(og)
         currentRoot = self.roots[(self.currentGraphKey,key)]
+        og.graph["root"] = currentRoot
         endpoints = self.endpoints[self.currentGraphKey]
         bifurcations = self.bifurcations[self.currentGraphKey]
         cg = self.graphs[self.currentGraphKey]
@@ -278,11 +281,10 @@ class SkeletonGraph(object):
         """prune the specified degree one node. If node is not of degree one,
         no steps are taken"""
         og = self.orderedGraphs[key]
-        root = self.roots[key]
         deg = og.degree(node)
         if( deg != 1 ):
             return
-        safelyRemoveNode(og, node,root,self.reMap)
+        safelyRemoveNode(og, node,self.reMap)
     def reportEdgeLengths(self, key, degree = None ):
         og = self.orderedGraphs[key]
         edges = og.edges(data=True)
@@ -533,21 +535,24 @@ def deleteExtraEdges(cg, b):
         cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
         cg = deleteExtraEdges(cg,b)
     return cg
-def safelyRemoveNode(og,n, root, reMap):
+def safelyRemoveNode(og,n, reMap):
     """removes node n from ordered graph og. Any mappedPoints associated
     with adjacent edges are placed in reMap to obe remapped"""
     preds = og.predecessors(n)
     for p in preds:
         if( og[p][n].has_key("mappedPoints") ):
             reMap.append(og[p][n]["mappedPoints"])
+        deletedEdges = og.graph.get("deletedEdges",[])
+        deletedEdges.append((p,n))
+        og.graph["deletedEdges"] = deletedEdges
         og.remove_node(n)
-    safelyRemoveDegree2Nodes(og, root, reMap)
+    safelyRemoveDegree2Nodes(og, reMap)
         
-def safelyRemoveDegree2Nodes(og, root, reMap):
+def safelyRemoveDegree2Nodes(og, reMap):
     """Delete all degree 2 nodes (except for the root node if it is degree 2)"""
     dgs = og.degree()
     for n,d in dgs.items():
-        if( d == 2 and n != root):
+        if( d == 2 and n != og.graph['root']):
             print "deleting node",n
             pred = og.predecessors(n)[0]
             succ = og.successors(n)[0]
