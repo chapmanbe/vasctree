@@ -19,17 +19,22 @@ a graph-key equal to the specified graph-key concatenated with '_edited'"""
 import cPickle
 import numpy as np
 import sys
+from optparse import OptionParser
 from vasctrees.SkeletonGraph import SkeletonGraph
 from enthought.mayavi import mlab
+
 class GraphViewer(object):
-    def __init__(self,fname, objectnum, keyname):
+    def __init__(self,fname, objectnum = -1, keyname = ''):
         self.fname = fname
         self.efile = file(fname+".error","w")
         self.stderr = sys.stderr
-        self.key = (objectnum,keyname)
         f = file(fname)
         self.data = cPickle.load(f)
         f.close()
+        if( objectnum == -1 or keyname == ''):
+            self.key = getOrderedGraphKeys(self.data['orderedGraphs'])
+        else:
+            self.key = (objectnum,keyname)
         self.sg = SkeletonGraph()
         self.sg.orderedGraphs = self.data['orderedGraphs']
         self.sg.roots = self.data['roots']
@@ -57,6 +62,7 @@ class GraphViewer(object):
         self.og = self.sg.orderedGraphs[self.key]
         self.edges = self.og.edges(data=True)
         self.nodes = self.og.nodes(data=True)
+        
     def _clearGraphDrawables(self):
         self.npts = 0
         self.node_points = 0
@@ -101,25 +107,27 @@ class GraphViewer(object):
         colors = ((1,0,0),(0,1,0),(0,0,1),(1,1,0),(1,0,1),(0,1,1))
         counter = 0
         for e in self.edges:
-            clr = colors[counter%len(colors)]
-            counter += 1
-            mp = e[2]["mappedPoints"]#np.concatenate((mp,e[2]["mappedPoints"]),axis=0)
-            sp = e[2]['d0']
-            x = mp[::4,0]
-            y = mp[::4,1]
-            z = mp[::4,2]
-            #Visualize the points
-            pts = mlab.points3d(x, y, z, scale_mode='none', scale_factor=0.2, opacity=0.0)
-            
-            # Create and visualize the mesh
-            # redirect sys.stderr for this step
-            sys.stderr = self.efile
-            mesh = mlab.pipeline.delaunay3d(pts)
-            self.surfaces[(e[0],e[1])] = mlab.pipeline.surface(mesh,color=clr,opacity=0.1)
-            sys.stderr = self.stderr
-            pts = 0
-            self.lines[(e[0],e[1])] = mlab.plot3d(sp[0],sp[1],sp[2],color=clr, tube_radius=1.0)
-        
+            try:
+                clr = colors[counter%len(colors)]
+                counter += 1
+                mp = e[2]["mappedPoints"]#np.concatenate((mp,e[2]["mappedPoints"]),axis=0)
+                sp = e[2]['d0']
+                x = mp[::4,0]
+                y = mp[::4,1]
+                z = mp[::4,2]
+                #Visualize the points
+                pts = mlab.points3d(x, y, z, scale_mode='none', scale_factor=0.2, opacity=0.0)
+                
+                # Create and visualize the mesh
+                # redirect sys.stderr for this step
+                sys.stderr = self.efile
+                mesh = mlab.pipeline.delaunay3d(pts)
+                self.surfaces[(e[0],e[1])] = mlab.pipeline.surface(mesh,color=clr,opacity=0.1)
+                sys.stderr = self.stderr
+                pts = 0
+                self.lines[(e[0],e[1])] = mlab.plot3d(sp[0],sp[1],sp[2],color=clr, tube_radius=1.0)
+            except KeyError:
+                pass
         #mlab.view(47, 57, 8.2, (0.1, 0.15, 0.14))
         self.figure.scene.disable_render = False
         print "ready for editing"
@@ -165,14 +173,35 @@ class GraphViewer(object):
                 # I wonder if this is a qued click from the previous window
 
 
+def getOrderedGraphKeys(ogs):
+    keys = ogs.keys()
+    txt = "Select number of desired key:\n"
+    for i in range(len(keys)):
+        txt += """%d\t\t%s\n"""%(i,keys[i])
+    while(True):
+        try:
+            keyNum = input(txt)
+            if( 0 <= keyNum and keyNum < len(keys) ):
+                return keys[keyNum]
+        except:
+            pass
+    return None
+def getParser():
+    try:
+        parser = OptionParser()
+        parser.add_option("-f","--file",dest='fname',
+                          help='name or directory for fixedImage')
+        parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
+        parser.add_option('-l','--label',dest='label',default='')
 
-                
+        return parser
+    except Exception, error:
+        print "failed in getParser", error  
+        sys.exit(0)               
         
 if __name__ == '__main__':
-    if( len(sys.argv) < 4 ):
-        print "Incorrect usage: skeleton-graph-file object-number graph-label"
-        sys.exit()
-    f = file(sys.argv[1]+".error","w")
-    gv = GraphViewer(sys.argv[1], int(sys.argv[2]), sys.argv[3])
+    parser = getParser()
+    (options, args) = parser.parse_args()
+    gv = GraphViewer(options.fname, objectnum = options.objNum, keyname=options.label)
     gv.drawGraph()
     

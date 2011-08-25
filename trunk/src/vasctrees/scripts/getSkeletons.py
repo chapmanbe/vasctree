@@ -32,7 +32,6 @@ def getParser():
         print "failed to generate parser",  error
         
 
-
 def main():
     try:
         parser = getParser()

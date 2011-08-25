@@ -2,10 +2,7 @@
 # Need to select license to use
 import networkx as nx
 import numpy as np
-import sys
 import cPickle
-import os
-import subprocess
 import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
@@ -274,7 +271,7 @@ class SkeletonGraph(object):
         root = self.roots[key]
         min_len, min_node = getShortestTerminalNode(og)
         if( min_len <= threshold ):
-            safelyRemoveNode(og, min_node, root, self.reMap)
+            safelyRemoveNode(og, min_node, self.reMap)
             self.prunePaths(key, threshold=threshold)
 
     def pruneSpecifiedDegreeOneNode(self,key,node):
@@ -395,7 +392,10 @@ class SkeletonGraph(object):
             return
         points_toMap = self.reMap[0]
         for p in self.reMap[1:]:
-            points_toMap = np.concatenate((points_toMap,p),axis=0)
+            try:
+                points_toMap = np.concatenate((points_toMap,p),axis=0)
+            except ValueError:
+                print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
         self.mapVoxelsToGraph(points_toMap,key,worldCoordinates=True, verbose=False)
         self.reMap = []
         
@@ -454,19 +454,22 @@ class SkeletonGraph(object):
                 tmp = 0
             except KeyError:
                 pass
-            planePoints = {}
-            if( e[2].has_key("mappedPoints") ):
-                mps = e[2]['mappedPoints']
-                d1s = e[2]['d1']
-                ps  = e[2]['p']
-                d0s = e[2]['d0']
-                numPoints = len(mps) # get the number of points on the fitted edge
-                cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
-                results = []
-                pool = mp.Pool(mp.cpu_count())
-                results = pool.map_async(cmvtg.checkInPlane,cmds).get()
-                planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
-            e[2]["planePoints"] = planePoints
+            try:
+                planePoints = {}
+                if( e[2].has_key("mappedPoints") ):
+                    mps = e[2]['mappedPoints']
+                    d1s = e[2]['d1']
+                    ps  = e[2]['p']
+                    d0s = e[2]['d0']
+                    numPoints = len(mps) # get the number of points on the fitted edge
+                    cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
+                    results = []
+                    pool = mp.Pool(mp.cpu_count())
+                    results = pool.map_async(cmvtg.checkInPlane,cmds).get()
+                    planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
+                e[2]["planePoints"] = planePoints
+            except KeyError:
+                pass
 
 def checkInPlane(args):
     """args: tuple of the following values
@@ -564,10 +567,13 @@ def safelyRemoveDegree2Nodes(og, reMap):
                 reMap.append(og[n][succ]["mappedPoints"])
             newEdge = p1+[n]+p2
             # need to add wpath and then recompute d0,d1,d2
-            newWPath = og[pred][n]['wpath']+og[n][succ]['wpath']
-            og.remove_node(n)
-            og.add_edge(pred,succ,path=newEdge, wpath=newWPath)
-            fitEdge(og,(pred,succ))
+            if(og[pred][n].has_key('wpath') and og[n][succ].has_key('wpath') ):
+                # edges have already been fit to this data
+                # merge and refit
+                newWPath = og[pred][n]['wpath']+og[n][succ]['wpath']
+                og.remove_node(n)
+                og.add_edge(pred,succ,path=newEdge, wpath=newWPath)
+                fitEdge(og,(pred,succ))
 def getShortestTerminalNode(og):
     dgs = og.degree()
     for n,d in dgs.items():
