@@ -399,7 +399,7 @@ class SkeletonGraph(object):
         self.mapVoxelsToGraph(points_toMap,key,worldCoordinates=True, verbose=False)
         self.reMap = []
         
-    def mapVoxelsToGraph(self, points_toMap, key, worldCoordinates=False, verbose=False):
+    def mapVoxelsToGraph(self, points_toMap, key, mp_key="mappedPoints",worldCoordinates=False, verbose=False):
         """maps each voxel specified in points_toMap to a particular graph edge.
         points_toMap  is assumed to be a Nx3 array of image coordinates (i,j,k)
         if worldCoordiantes=False and are converted to world coordinates (x,y,z)
@@ -424,20 +424,20 @@ class SkeletonGraph(object):
         # r is a tuple of the point and the edge mapped to by that point        
            mdata[r[1]].append(r[0])
         for e in mdata.keys():
-            mps = cg[e[0]][e[1]].get('mappedPoints',None)
+            mps = cg[e[0]][e[1]].get(mp_key,None)
             newmps = np.array(mdata[e])
             print "%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1])
             if( mps == None ):
-                cg[e[0]][e[1]]['mappedPoints'] = newmps
+                cg[e[0]][e[1]][mp_key] = newmps
             else:
                 try:
                     if( verbose ):
                         print "merging %d points with %d points"%(mps.shape[0],len(mdata[e]))
-                    cg[e[0]][e[1]]['mappedPoints'] = np.concatenate((mps,newmps),axis=0)
+                    cg[e[0]][e[1]][mp_key] = np.concatenate((mps,newmps),axis=0)
                 except Exception, error:
                     pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
         for e in mdata.keys():
-           cg[e[0]][e[1]]['mappedPoints'].shape
+           cg[e[0]][e[1]][mp_key].shape
         return 
 
 
