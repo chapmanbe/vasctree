@@ -10,5 +10,5 @@ setup(name='vasctree',
       packages=find_packages('src'),
       package_dir={'':'src'},
       install_requires = ['python>=2.6','numpy>=1.3','networkx'],
-      scripts = ['src/vasctrees/scripts/editGraph.py',],
+      scripts = ['src/vasctrees/scripts/getPHSkel2.py','src/vasctrees/scripts/editGraph.py',],
      )
