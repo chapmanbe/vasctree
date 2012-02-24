@@ -21,7 +21,7 @@ import numpy as np
 import sys
 from optparse import OptionParser
 from vasctrees.SkeletonGraph import SkeletonGraph
-from enthought.mayavi import mlab
+from mayavi import mlab
 
 class GraphViewer(object):
     def __init__(self,fname, objectnum = -1, keyname = ''):

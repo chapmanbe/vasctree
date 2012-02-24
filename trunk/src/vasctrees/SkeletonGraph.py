@@ -578,15 +578,18 @@ def getShortestTerminalNode(og):
     dgs = og.degree()
     for n,d in dgs.items():
         if( d == 1 ):
-            p = og.predecessors(n)[0]
-            elen = len(og[p][n]['path'])
             try:
-                if(elen < min_elen):
-                    min_elen = elen
+                p = og.predecessors(n)[0]
+                elen = len(og[p][n]['path'])
+                try:
+                    if(elen < min_elen):
+                        min_elen = elen
+                        min_node = n
+                except NameError:
+                    min_elen = p
                     min_node = n
-            except NameError:
-                min_elen = p
-                min_node = n
+            except IndexError:
+                pass
     return min_elen, min_node
 
 def fitEdge(og,e):
