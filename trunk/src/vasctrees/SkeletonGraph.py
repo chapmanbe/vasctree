@@ -408,6 +408,8 @@ class SkeletonGraph(object):
 
         # get the coordinates of the nonzero points of the mask that are not part of the skeleton
         if( not worldCoordinates ):
+            if( verbose ):
+                print "transforming to world coordinates with",self.origin,self.spacing
             points = self.origin + self.spacing*points_toMap
         else:
             points = points_toMap

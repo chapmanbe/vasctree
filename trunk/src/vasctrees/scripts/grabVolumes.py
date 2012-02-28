@@ -52,10 +52,33 @@ class VolumeGrabber(object):
                          imgMode='uchar',
                          returnDescriptors = True)
         self.dfe = ndi.distance_transform_cdt(self.simg)
+        cg = self.sg.orderedGraphs[self.key]
+        self.sg.spacing=cg.graph["spacing"]
+        self.sg.origin=cg.graph["origin"]
         self.points_toMap = np.array(np.nonzero(np.where(self.simg==1,1,0))[::-1]).transpose().astype(np.int32)
 
     def mapVolumePoints(self,key="volumePoints"):
-        self.sg.mapVoxelsToGraph(self.points_toMap,self.key,mp_key=key)
+        self.sg.mapVoxelsToGraph(self.points_toMap,self.key,mp_key=key, verbose=True)
+
+    def computeVolumeMeasures(self, key="volumePoints"):
+        cg = self.sg.orderedGraphs[self.key]
+        edges = cg.edges(data=True)
+        for e in edges:
+            mask = np.zeros(cg.graph["imgSize"],np.uint8)
+            worldVolume = e[2][key]
+# now we need to transform the worldVolume coordinates back to image coordinates
+            ivi = ((worldVolume-cg.graph["origin"])/cg.graph["spacing"]).astype(np.int32)
+            mask[ivi[:,2],ivi[:,1],ivi[:,0]] = 1
+            surface = mask - ndi.binary_erosion(mask)
+# now we've got img indicies we can grab the surface based on dfe values
+            sinds =  np.nonzero(surface)
+            dfeVals = self.dfe[sinds]
+            edgeSurface = np.nonzero(dfeVals==1)
+            surface_to_volume = float(sinds[0].size)/float(ivi[:,0].size)
+            exterior_to_surface = float(edgeSurface[0].size)/float(sinds[0].size)
+            e[2]["surface2volume"] = surface_to_volume
+            e[2]["exterior2surface"] = exterior_to_surface
+
     def saveModifiedData(self):
         print "saving modified data"
         self.data['orderedGraphs'] = self.sg.orderedGraphs
@@ -101,5 +124,6 @@ if __name__ == '__main__':
     gv = VolumeGrabber(options.fname, objectnum = options.objNum, keyname=options.label,img=options.img)
     gv.readImage()
     gv.mapVolumePoints()
+    gv.computeVolumeMeasures()
     gv.saveModifiedData()
     
