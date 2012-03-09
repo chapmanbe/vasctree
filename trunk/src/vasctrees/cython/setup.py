@@ -11,7 +11,7 @@ ext_modules = [
   ]
 
 setup(name='cmvtg',
-      version='0.1',
+      version='0.1.1',
   cmdclass = {'build_ext': build_ext},
   ext_modules = ext_modules
 )

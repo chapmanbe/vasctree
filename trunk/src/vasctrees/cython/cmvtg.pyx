@@ -76,6 +76,7 @@ def measureDistToEdge(np.ndarray[np.float64_t, ndim=1] p,e):
     return mdist
 def mapPToEdge(args, verbose = True):
     """takes a graph g and """
+    #print "mapPToEdge"
     p = args[0]
     g = args[1]
     ge = g.edges(data=True)
@@ -95,6 +96,7 @@ def mapPToEdge(args, verbose = True):
             break
         else:
             ii += 1
+    #print "minEdge %s; mdist %s"%(minEdge,mdist)
     for j in xrange(ii+1,lsize):
         if( len(ge[j][2]['wpath'])>1 ):
             #print len(ge[j][2]['path'])
@@ -102,7 +104,9 @@ def mapPToEdge(args, verbose = True):
             if( cdist < mdist ):
                 mdist = cdist
                 minEdge = (ge[j][0],ge[j][1])
-    
+                #print "This is a new minimum",mdist,minEdge
+   
+    #print "this is the matched edge",minEdge,mdist
     return p,minEdge
 
 def getGraphsFromSkeleton(np.ndarray[np.uint8_t, ndim=3] mask,

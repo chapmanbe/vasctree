@@ -415,6 +415,7 @@ class SkeletonGraph(object):
             points = points_toMap
         pool = mp.Pool(mp.cpu_count())
         cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
+        print "points_toMap",points_toMap
     
         results = pool.map_async(cmvtg.mapPToEdge, cmds)
         resultList = results.get()

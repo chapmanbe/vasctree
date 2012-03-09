@@ -24,8 +24,9 @@ import imageTools.ITKUtils.io as io
 import scipy.ndimage as ndi
 
 class VolumeGrabber(object):
-    def __init__(self,fname, objectnum = -1, keyname = '', img=''):
+    def __init__(self,fname, objectnum = -1, keyname = '', img='',lvalue=1):
         self.fname = fname
+        self.lvalue = lvalue
         f = file(fname)
         self.data = cPickle.load(f)
         f.close()
@@ -55,9 +56,10 @@ class VolumeGrabber(object):
         cg = self.sg.orderedGraphs[self.key]
         self.sg.spacing=cg.graph["spacing"]
         self.sg.origin=cg.graph["origin"]
-        self.points_toMap = np.array(np.nonzero(np.where(self.simg==1,1,0))[::-1]).transpose().astype(np.int32)
+        self.points_toMap = np.array(np.nonzero(np.where(self.simg==self.lvalue,1,0))[::-1]).transpose().astype(np.int32)
 
     def mapVolumePoints(self,key="volumePoints"):
+        #print "in grabVolumes",self.points_toMap
         self.sg.mapVoxelsToGraph(self.points_toMap,self.key,mp_key=key, verbose=True)
 
     def computeVolumeMeasures(self, key="volumePoints"):
@@ -110,6 +112,7 @@ def getParser():
         parser.add_option("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
         parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
+        parser.add_option("-v","--value",dest="lvalue",type='int',default='1')
         parser.add_option("-i","--img",dest="img",default="",help="name or directory of segmented image")
         parser.add_option('-l','--label',dest='label',default='')
 
@@ -121,7 +124,9 @@ def getParser():
 if __name__ == '__main__':
     parser = getParser()
     (options, args) = parser.parse_args()
-    gv = VolumeGrabber(options.fname, objectnum = options.objNum, keyname=options.label,img=options.img)
+    gv = VolumeGrabber(options.fname, objectnum = options.objNum, 
+                       keyname=options.label,img=options.img,
+                       lvalue=options.lvalue)
     gv.readImage()
     gv.mapVolumePoints()
     gv.computeVolumeMeasures()
