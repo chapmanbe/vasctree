@@ -171,6 +171,25 @@ class SkeletonGraph(object):
         self.endpoints[self.currentGraphKey] = endpoints
         self.bifurcations[self.currentGraphKey] = bifurcations
     def selectSeedFromDFE(self):
+        """For the current graph, set the root to be the degree-1 node nearest the
+        maximum DFE location. Uses a chamfer distance measure to save time"""
+        try:
+            dfe = self.dfe
+        except:
+            oimg = self.oimg
+            self.dfe = ndi.distance_transform_cdt(oimg)
+            dfe = self.dfe
+        if( self.endpoints[self.currentGraphKey] ):
+            nds = np.array(self.endpoints[self.currentGraphKey])
+        else:    
+            nds = np.array([n for n in self.cg.nodes() if self.cg.degree(n) == 1])
+        if( nds.shape[0] == 1 ): # there is only one node to choose from so use it for seed
+            return (nds[0,0],nds[0,1],nds[0,2])
+        vals = dfe[nds[:,2],nds[:,1],nds[:,0]]
+        mi = vals.argmax()
+        return (nds[mi,0],nds[mi,1],nds[mi,2])
+
+    def selectSeedFromDFE_old(self):
         """For the current graph, set the root to be the node nearest the
         maximum DFE location. Uses a chamfer distance measure to save time"""
         try:
