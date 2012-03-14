@@ -31,28 +31,32 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4,
     counter = 0
     ss = 4
     for e in edges:
-        sp = e[2]['d0']
-        mps = e[2]['mappedPoints']
-        clr = colors[counter%len(colors)]
-        ax.plot(sp[0],sp[1],sp[2],color = clr)
-        if( showSurface):
-            try:
-                ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
-            except Exception, error:
-                print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
-                (e[0],e[1],mps.shape,error)
-        if( showMidPlane ):
-            try:
-                planePoints = e[2]['planePoints']
-                midpoint = len(planePoints.keys())/2
-                mps = np.array(e[2]['planePoints'][midpoint])
+        try:
+            sp = e[2]['d0']
+            mps = e[2]['mappedPoints']
+            clr = colors[counter%len(colors)]
+            ax.plot(sp[0],sp[1],sp[2],color = clr)
+            if( showSurface):
+                try:
+                    ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
+                except Exception, error:
+                    print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)
+            if( showMidPlane ):
+                try:
+                    planePoints = e[2]['planePoints']
+                    midpoint = len(planePoints.keys())/2
+                    mps = np.array(e[2]['planePoints'][midpoint])
 
-                ax.scatter(mps[:,0],mps[:,1],mps[:,2],color = clr,marker='+',alpha=0.5)
-            except Exception, error:
-                print "couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
-                (e[0],e[1],mps.shape,error)
+                    ax.scatter(mps[:,0],mps[:,1],mps[:,2],color = clr,marker='+',alpha=0.5)
+                except Exception, error:
+                    print "couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)
 
-        counter += 1
+            counter += 1
+        except KeyError:
+            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+                
             
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
     ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
