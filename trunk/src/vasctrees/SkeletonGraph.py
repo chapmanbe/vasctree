@@ -176,7 +176,7 @@ class SkeletonGraph(object):
         For the current graph, set the root to be the degree-1 node
         nearest the median x value for the graph nodes
         """
-        endpoints = [n for n in self.cg.nodes() if nx.degree(self.cg,n) == 1]
+        endp = [n for n in self.cg.nodes() if nx.degree(self.cg,n) == 1]
         endpa = np.array(endp)
         medianx = np.median(endpa[:,0])
         endp.sort(key=lambda n: abs(n[0]-medianx))
@@ -267,15 +267,16 @@ class SkeletonGraph(object):
             d = d*d
             d = d.sum(axis=1)
             self.roots[g] = endpoints[d.argmin()]
-    def setRoot(self, origin, key=0):
+    def setRoot(self, origin, exactMatch=True,key=0):
         """Define the point on the graph closest to origin as the root of the graphs.
         For now I'm going to be very simple-minded and just look for the nearest
         node. In actuality, we'd expect the origin to not be a bifurcation"""
-        try:
+        if( not exactMatch ):
             matchedNode = self.findNearestNode(origin)
             self.roots[(self.currentGraphKey,key)] = matchedNode
-        except Exception, error:
-            print "failed in setRoot", error
+        else:
+            print "setting root to exact node",origin
+            self.roots[(self.currentGraphKey,key)] = origin
     
     ###OTHER FUNCTIONS
     def deleteDegree2Nodes(self, key):
@@ -337,10 +338,10 @@ class SkeletonGraph(object):
                 if( len(path) < threshold ):
                     og.remove_node(n)                    
     def saveCompressedGraphs(self,name,protocol=0):
-        fo = gzip.GzipFile(name,"wb")
-        fo.write(cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
+        fo = gzip.open(name,"wb")
+        cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
                       'orderedGraphs':self.orderedGraphs,'roots':self.roots},
-                      protocol))
+                      fo)
         fo.close()
     def saveGraphs(self,name):
         fo = open(name,'wb')
@@ -411,16 +412,19 @@ class SkeletonGraph(object):
             if( e[2].has_key('d0') ):
                 d0 = e[2]['d0']
                 d1 = e[2]['d1']
-                numPoints = len(d0[0])
-                p = np.zeros((numPoints),dtype=np.float64)
-                pool = mp.Pool(mp.cpu_count())
-                cmds = [((d0[0][i],d0[1][i],d0[2][i]),
-                         (d1[0][i],d1[1][i],d1[2][i]),
-                         i) for i in xrange(numPoints)]
-                results = pool.map_async(computeResidue,cmds).get()
-                for r in results:
-                    p[r[0]] = r[1]
-                e[2]['p'] = p
+                try:
+                    numPoints = len(d0[0])
+                    p = np.zeros((numPoints),dtype=np.float64)
+                    pool = mp.Pool(mp.cpu_count())
+                    cmds = [((d0[0][i],d0[1][i],d0[2][i]),
+                            (d1[0][i],d1[1][i],d1[2][i]),
+                            i) for i in xrange(numPoints)]
+                    results = pool.map_async(computeResidue,cmds).get()
+                    for r in results:
+                        p[r[0]] = r[1]
+                    e[2]['p'] = p
+                except:
+                    pass
 
     def remapVoxelsToGraph(self,key, verbose=True):
         """take the pool of points stored in self.reMap and map them to edges
@@ -656,3 +660,7 @@ def fitEdge(og,e):
         og[e[0]][e[1]]['d1'] =np.array( splev(u,fit2[0],der=1))
         # second derivative (curvature) of spline
         og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
+    else:
+        og[e[0]][e[1]]['d0'] = None
+        og[e[0]][e[1]]['d1'] = None
+        og[e[0]][e[1]]['d2'] = None

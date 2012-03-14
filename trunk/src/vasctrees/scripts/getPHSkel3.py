@@ -39,9 +39,14 @@ sg.getGraphsFromSkeleton(verbose=False)
 sg.setLargestGraphToCurrentGraph()
 sg.graphs.keys()
 sg.findEndpointsBifurcations()
-root = sg.selectSeedFromGraphMedianX()
+endp = [n for n in sg.cg.nodes() if sg.cg.degree(n)]
+endpa = np.array(endp)
+medianx = np.median(endpa[:,0])
+endp.sort(key=lambda n: abs(n[0]-medianx))
+root = endp[0]
+print "identified root from median is",root
 #sg.viewGraph()
-#raw_input('continue')
+raw_input('continue')
 sg.setRoot(root,key="og_medianx")
 sg.traceEndpoints(key='og_medianx')
 ogkey = sg.getLargestOrderedGraphKey()
