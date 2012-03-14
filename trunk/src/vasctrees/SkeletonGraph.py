@@ -10,6 +10,7 @@ import math
 import multiprocessing as mp
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
+import gzip
 
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
@@ -170,6 +171,18 @@ class SkeletonGraph(object):
                 bifurcations.append(n)
         self.endpoints[self.currentGraphKey] = endpoints
         self.bifurcations[self.currentGraphKey] = bifurcations
+    def selectSeedFromGraphMedianX(self):
+        """
+        For the current graph, set the root to be the degree-1 node
+        nearest the median x value for the graph nodes
+        """
+        endpoints = [n for n in self.cg.nodes() if nx.degree(self.cg,n) == 1]
+        endpa = np.array(endp)
+        medianx = np.median(endpa[:,0])
+        endp.sort(key=lambda n: abs(n[0]-medianx))
+        self.cg.graph["root method"] = "graph medianx from endpoints"
+        return endp[0]
+
     def selectSeedFromDFE(self):
         """For the current graph, set the root to be the degree-1 node nearest the
         maximum DFE location. Uses a chamfer distance measure to save time"""
@@ -237,7 +250,9 @@ class SkeletonGraph(object):
         self.orderedGraphs[(self.currentGraphKey,key)] = og
 
     def setRoots(self, origins):
-        """Define where to stop tracing back, defined point on the pulmonary trunk"""
+        """
+        Define where to stop tracing back
+        """
         o = np.array(origins)
         sz = self.img.shape
         nxy = sz[2]*sz[1]
@@ -321,7 +336,12 @@ class SkeletonGraph(object):
                 path = og[p][n]['path']
                 if( len(path) < threshold ):
                     og.remove_node(n)                    
-            
+    def saveCompressedGraphs(self,name,protocol=0):
+        fo = gzip.GzipFile(name,"wb")
+        fo.write(cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
+                      'orderedGraphs':self.orderedGraphs,'roots':self.roots},
+                      protocol))
+        fo.close()
     def saveGraphs(self,name):
         fo = open(name,'wb')
 
