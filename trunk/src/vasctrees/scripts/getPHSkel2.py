@@ -52,4 +52,4 @@ print "mapVoxelsToGraph"
 sg.mapVoxelsToGraph(points_toMap,ogkey)
 print "assignMappedPointsToPlanes"
 sg.assignMappedPointsToPlanes(ogkey)
-sg.saveGraphs(sys.argv[3])
+sg.saveCompressedGraphs(sys.argv[3])

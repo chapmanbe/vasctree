@@ -183,7 +183,7 @@ class SkeletonGraph(object):
         self.cg.graph["root method"] = "graph medianx from endpoints"
         return endp[0]
 
-    def selectSeedFromDFE(self):
+    def selectSeedFromDFE_experimental(self):
         """For the current graph, set the root to be the degree-1 node nearest the
         maximum DFE location. Uses a chamfer distance measure to save time"""
         try:
@@ -202,7 +202,7 @@ class SkeletonGraph(object):
         mi = vals.argmax()
         return (nds[mi,0],nds[mi,1],nds[mi,2])
 
-    def selectSeedFromDFE_old(self):
+    def selectSeedFromDFE(self):
         """For the current graph, set the root to be the node nearest the
         maximum DFE location. Uses a chamfer distance measure to save time"""
         try:
@@ -516,6 +516,32 @@ class SkeletonGraph(object):
                 e[2]["planePoints"] = planePoints
             except KeyError:
                 pass
+def deleteDegree2NodesUnordered(g):
+    """Delete all degree 2 nodes. Modifies g in place """
+
+    dgs = g.degree()
+    
+    for n,d in dgs.items():
+        if( d == 2 ):
+            print "deleting node",n
+            pred = g.predecessors(n)[0]
+            succ = g.successors(n)[0]
+            p1 = g[pred][n]['path']
+            p2 = g[n][succ]['path']
+            newEdge = p1+[n]+p2
+            g.remove_node(n)
+            g.add_edge(pred,succ,path=newEdge)
+def prunePaths( g, threshold=5):
+    """Removes terminal paths that are considered to be too short
+    to be part of the skeleton
+    
+    Can I rewrite this in a more functional way?"""
+    root = self.roots[key]
+    min_len, min_node = getShortestTerminalNodeUndirected(g)
+    if( min_len <= threshold ):
+        g.remove_node(min_node)
+        deleteDegree2NodesUnordered(g)
+        prunePaths(g, threshold=threshold)
 
 def checkInPlane(args):
     """args: tuple of the following values
@@ -586,7 +612,7 @@ def deleteExtraEdges(cg, b):
     return cg
 def safelyRemoveNode(og,n, reMap):
     """removes node n from ordered graph og. Any mappedPoints associated
-    with adjacent edges are placed in reMap to obe remapped"""
+    with adjacent edges are placed in reMap to be remapped"""
     preds = og.predecessors(n)
     for p in preds:
         if( og[p][n].has_key("mappedPoints") ):
@@ -626,6 +652,23 @@ def getShortestTerminalNode(og):
         if( d == 1 ):
             try:
                 p = og.predecessors(n)[0]
+                elen = len(og[p][n]['path'])
+                try:
+                    if(elen < min_elen):
+                        min_elen = elen
+                        min_node = n
+                except NameError:
+                    min_elen = p
+                    min_node = n
+            except IndexError:
+                pass
+    return min_elen, min_node
+def getShortestTerminalNodeUndirected(og):
+    dgs = og.degree()
+    nodes = [n for n in og.nodes() if og.degree(n) == 1]
+    for n in nodes:
+            try:
+                p = og.neighbors(n)[0]
                 elen = len(og[p][n]['path'])
                 try:
                     if(elen < min_elen):

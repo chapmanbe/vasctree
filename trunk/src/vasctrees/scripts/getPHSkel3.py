@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from vasctrees.SkeletonGraph import SkeletonGraph
+import vasctrees.SkeletonGraph as skgs
 import sys
 import scipy.ndimage as ndi
 import numpy as np
@@ -39,7 +40,7 @@ sg.getGraphsFromSkeleton(verbose=False)
 sg.setLargestGraphToCurrentGraph()
 sg.graphs.keys()
 sg.findEndpointsBifurcations()
-endp = [n for n in sg.cg.nodes() if sg.cg.degree(n)]
+endp = [n for n in sg.cg.nodes() if sg.cg.degree(n)==1]
 endpa = np.array(endp)
 medianx = np.median(endpa[:,0])
 endp.sort(key=lambda n: abs(n[0]-medianx))
