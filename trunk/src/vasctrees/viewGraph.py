@@ -6,6 +6,43 @@ from matplotlib.ticker import LinearLocator, FixedLocator, FormatStrFormatter
 import matplotlib as mpl
 import matplotlib.pyplot as pp
 import numpy as np
+def get3DPlotUndirected(fig, og,
+        verbose=True, degree = None):
+              
+    ax = Axes3D(fig)
+    nodes = og.nodes(data=True)
+    ends = []
+    paths = []
+    bifurs = []
+    axes = ax.get_axes()
+    axes.set_axis_off()
+    ax.set_axes(axes)
+    
+    for i in range(len(nodes)):
+        dg = og.degree(nodes[i][0])
+        if( dg == 1 ):
+            ends.append(nodes[i][0])
+        elif( dg == 2 ):
+            paths.append(nodes[i][0])
+        else:
+            bifurs.append(nodes[i][0])
+
+    earray = np.array(ends)
+    parray = np.array(paths)
+    barray = np.array(bifurs)
+    colors = ['r','g','b','y','m','c']
+    counter = 0
+            
+    ax.scatter(earray[:,0],earray[:,1],earray[:,2],color='r',marker='o',linewidth=3, picker=5)
+    ax.scatter(parray[:,0],parray[:,1],parray[:,2],color='g',marker='o',linewidth=1, picker=5)
+    ax.scatter(barray[:,0],barray[:,1],barray[:,2],color='b',marker='o',linewidth=8, picker=5)
+
+    
+    
+    ax.w_zaxis.set_major_locator(LinearLocator(3))
+    ax.w_xaxis.set_major_locator(LinearLocator(3))
+    ax.w_yaxis.set_major_locator(LinearLocator(3))
+    return ax
 
 def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4, 
               verbose=True, degree = None, showSurface=True, 
