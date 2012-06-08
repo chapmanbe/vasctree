@@ -13,7 +13,7 @@ setup(name='vasctree',
       scripts = ['src/vasctrees/scripts/getPHSkel2.py',
                  'src/vasctrees/scripts/getPHSkel3.py',
                  'src/vasctrees/scripts/editGraph.py',
-                 'src/vasctrees/scripts/reroootGraph.py',
+                 'src/vasctrees/scripts/rerootGraph.py',
                  'src/vasctrees/scripts/viewGraphs.py',
                  'src/vasctrees/scripts/grabVolumes.py',],
      )
