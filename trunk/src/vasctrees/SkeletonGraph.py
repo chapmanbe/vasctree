@@ -425,22 +425,27 @@ class SkeletonGraph(object):
                     e[2]['p'] = p
                 except:
                     pass
-
+    def rerootGraph(self,newRoot,key):
+        cg = self.orderedGraphs[key]
+        oldRoot = cg.graph['root']
+        path = nx.shortest_path(cg,oldRoot,newRoot)
+        cg.graph["root"] = newRoot
+        for i in xrange(len(path)-1):
+            d = cg[path[i]][path[i+1]]
+            d['flipped'] = {}
+            print "removing",path[i],path[i+1],d['path']
+            cg.remove_edge(path[i],path[i+1])
+            cg.add_edge(path[i+1],path[i],attr_dict=d)
+            print "added",path[i+1],path[i],cg[path[i+1]][path[i]]["path"]
+            raw_input("continue")
+        
+        # I wonder if I need to reorder the edge attributes?
+        #safelyRemoveDegree2Nodes(cg,self.reMap)
+        #self.remapVoxelsToGraph(key)
     def remapVoxelsToGraph(self,key, verbose=True):
         """take the pool of points stored in self.reMap and map them to edges
         in the graph"""
-        if( verbose ):
-            print "remapping freed voxels to remaining edges"
-        if(not self.reMap ):
-            return
-        points_toMap = self.reMap[0]
-        for p in self.reMap[1:]:
-            try:
-                points_toMap = np.concatenate((points_toMap,p),axis=0)
-            except ValueError:
-                print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
-        self.mapVoxelsToGraph(points_toMap,key,worldCoordinates=True, verbose=False)
-        self.reMap = []
+        remapVoxelsToGraph(self.orderedGraphs[key],self.reMap,verbose=True)
         
     def mapVoxelsToGraph(self, points_toMap, key, mp_key="mappedPoints",worldCoordinates=False, verbose=False):
         """maps each voxel specified in points_toMap to a particular graph edge.
@@ -448,74 +453,23 @@ class SkeletonGraph(object):
         if worldCoordiantes=False and are converted to world coordinates (x,y,z)
         prior to mapping. If worldCoordiantes=True the data are assumed to be a """
         cg = self.orderedGraphs[key]
-
-        # get the coordinates of the nonzero points of the mask that are not part of the skeleton
-        if( not worldCoordinates ):
-            if( verbose ):
-                print "transforming to world coordinates with",self.origin,self.spacing
-            points = self.origin + self.spacing*points_toMap
-        else:
-            points = points_toMap
-        pool = mp.Pool(mp.cpu_count())
-        cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
-        print "points_toMap",points_toMap
-    
-        results = pool.map_async(cmvtg.mapPToEdge, cmds)
-        resultList = results.get()
-        eg = cg.edges(data = True)
-        mdata = {}
-        for e in cg.edges():
-           mdata[e] = []
-        for r in resultList:
-        # r is a tuple of the point and the edge mapped to by that point        
-           mdata[r[1]].append(r[0])
-        for e in mdata.keys():
-            mps = cg[e[0]][e[1]].get(mp_key,None)
-            newmps = np.array(mdata[e])
-            print "%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1])
-            if( mps == None ):
-                cg[e[0]][e[1]][mp_key] = newmps
-            else:
-                try:
-                    if( verbose ):
-                        print "merging %d points with %d points"%(mps.shape[0],len(mdata[e]))
-                    cg[e[0]][e[1]][mp_key] = np.concatenate((mps,newmps),axis=0)
-                except Exception, error:
-                    pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
-        for e in mdata.keys():
-           cg[e[0]][e[1]][mp_key].shape
-        return 
+        mapVoxelstoGraph(cg,points_toMap, mp_key=mp_key,worldCoordinates=worldCoordinates,verbose=verbose)
 
 
     def assignMappedPointsToPlanes(self, key, verbose=True):
         """takes the mapped points associated with each edge and maps them
         to the orthogonal planes associated with specific points on the fitted
         path"""
-        edges = self.orderedGraphs[key].edges(data = True)
-        for e in edges:
-            if( verbose ):
-                print "processing edge %s->%s"%(e[0],e[1])
-            try:
-                tmp = e[2].pop("planePoints")
-                tmp = 0
-            except KeyError:
-                pass
-            try:
-                planePoints = {}
-                if( e[2].has_key("mappedPoints") ):
-                    mps = e[2]['mappedPoints']
-                    d1s = e[2]['d1']
-                    ps  = e[2]['p']
-                    d0s = e[2]['d0']
-                    numPoints = len(mps) # get the number of points on the fitted edge
-                    cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
-                    results = []
-                    pool = mp.Pool(mp.cpu_count())
-                    results = pool.map_async(cmvtg.checkInPlane,cmds).get()
-                    planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
-                e[2]["planePoints"] = planePoints
-            except KeyError:
-                pass
+        mapPointsToPlanes(self.orderedGraphs[key],verbose=verbose)
+
+# Utility FUNCTIONS
+def reverseEdgeAttributes(edgeData):
+    """for a path that is being flipped reverse all relevant edge attributes"""
+    if( not edgeData.has_key("flipped") ):
+        return
+    if( edgeData.has_key("path") ):
+        edgeData['path'] = _flipEdgePath(edgeData['path'])
+        edgeData['flipped']['path'] = True
 def deleteDegree2NodesUnordered(g):
     """Delete all degree 2 nodes. Modifies g in place """
 
@@ -634,9 +588,16 @@ def safelyRemoveDegree2Nodes(og, reMap):
             p1 = og[pred][n]['path']
             if( og[pred][n].has_key('mappedPoints') ):
                 reMap.append(og[pred][n]["mappedPoints"])
+                print "remapping %d points from predecessor"%len(og[pred][n]["mappedPoints"])
+            else:
+                print "no mapped points for predecessor"
             p2 = og[n][succ]['path']
             if( og[n][succ].has_key("mappedPoints") ):
                 reMap.append(og[n][succ]["mappedPoints"])
+                print "remapping %d points from successor "%len(og[n][succ]["mappedPoints"])
+
+            else:
+                print "no mapped points for successor"
             newEdge = p1+[n]+p2
             # need to add wpath and then recompute d0,d1,d2
             if(og[pred][n].has_key('wpath') and og[n][succ].has_key('wpath') ):
@@ -646,6 +607,8 @@ def safelyRemoveDegree2Nodes(og, reMap):
                 og.remove_node(n)
                 og.add_edge(pred,succ,path=newEdge, wpath=newWPath)
                 fitEdge(og,(pred,succ))
+            else:
+                print "no world path to merge"
 def getShortestTerminalNode(og):
     dgs = og.degree()
     for n,d in dgs.items():
@@ -691,6 +654,7 @@ def fitEdge(og,e):
     ae = np.array(path)
     
     if( ae.shape[0] > 3 ): # there are not enough points to fit with
+        print "refitting edge with %d points"%len(path)
 
         s = ae.shape[0]/2.0
 
@@ -704,6 +668,120 @@ def fitEdge(og,e):
         # second derivative (curvature) of spline
         og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
     else:
+        print "no or insufficient points to fit"
         og[e[0]][e[1]]['d0'] = None
         og[e[0]][e[1]]['d1'] = None
         og[e[0]][e[1]]['d2'] = None
+def mapPointsToPlanes(og, verbose=True):
+    """takes the mapped points associated with each edge and maps them
+    to the orthogonal planes associated with specific points on the fitted
+    path"""
+    edges = og.edges(data = True)
+    for e in edges:
+        if( verbose ):
+            print "processing edge %s->%s"%(e[0],e[1])
+        try:
+            tmp = e[2].pop("planePoints")
+            tmp = 0
+        except KeyError:
+            pass
+        try:
+            planePoints = {}
+            if( e[2].has_key("mappedPoints") ):
+                mps = e[2]['mappedPoints']
+                d1s = e[2]['d1']
+                ps  = e[2]['p']
+                d0s = e[2]['d0']
+                numPoints = len(mps) # get the number of points on the fitted edge
+                cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
+                results = []
+                pool = mp.Pool(mp.cpu_count())
+                results = pool.map_async(cmvtg.checkInPlane,cmds).get()
+                planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
+            e[2]["planePoints"] = planePoints
+        except KeyError, error:
+            print "failed to map to plane with  error", error
+            pass
+def remapVoxelsToGraph(og, reMap, verbose=True):
+    """take the pool of points stored in self.reMap and map them to edges
+    in the graph"""
+    if( verbose ):
+        print "remapping freed voxels to remaining edges"
+    if( not reMap ):
+        return
+    points_toMap = reMap[0]
+    for p in reMap[1:]:
+        try:
+            points_toMap = np.concatenate((points_toMap,p),axis=0)
+        except ValueError:
+            print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
+            raw_input('continue')
+    print points_toMap.shape
+    mapVoxelsToGraph(og, points_toMap,worldCoordinates=True, verbose=False)
+    reMap = []
+def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
+    """maps each voxel specified in points_toMap to a particular graph edge.
+    points_toMap  is assumed to be a Nx3 array of image coordinates (i,j,k)
+    if worldCoordiantes=False and are converted to world coordinates (x,y,z)
+    prior to mapping. If worldCoordiantes=True the data are assumed to be a """
+
+    # get the coordinates of the nonzero points of the mask that are not part of the skeleton
+    if( not worldCoordinates and origin and spacing ):
+        if( verbose ):
+            print "transforming to world coordinates with",origin,spacing
+        points = origin + spacing*points_toMap
+    else:
+        points = points_toMap
+    print type(points)
+    try:
+        print points.shape
+    except:
+        print "couldn't get shape for points"
+    pool = mp.Pool(mp.cpu_count())
+    cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
+    print "points_toMap",points_toMap
+
+    results = pool.map_async(cmvtg.mapPToEdge, cmds)
+    resultList = results.get()
+    eg = cg.edges(data = True)
+    mdata = {}
+    for e in cg.edges():
+        mdata[e] = []
+    for r in resultList:
+    # r is a tuple of the point and the edge mapped to by that point        
+        mdata[r[1]].append(r[0])
+    for e in mdata.keys():
+        mps = cg[e[0]][e[1]].get(mp_key,None)
+        newmps = np.array(mdata[e])
+        print "%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1])
+        if( mps == None ):
+            cg[e[0]][e[1]][mp_key] = newmps
+        else:
+            try:
+                if( verbose ):
+                    print "merging %d points with %d points"%(mps.shape[0],len(mdata[e]))
+                cg[e[0]][e[1]][mp_key] = np.concatenate((mps,newmps),axis=0)
+            except Exception, error:
+                pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
+    for e in mdata.keys():
+        cg[e[0]][e[1]][mp_key].shape
+def defineOrthogonalPlanes(og):
+    edges = og.edges(data=True)
+    for e in edges:
+        if( e[2].has_key('d0') ):
+            d0 = e[2]['d0']
+            d1 = e[2]['d1']
+            try:
+                numPoints = len(d0[0])
+                p = np.zeros((numPoints),dtype=np.float64)
+                pool = mp.Pool(mp.cpu_count())
+                cmds = [((d0[0][i],d0[1][i],d0[2][i]),
+                        (d1[0][i],d1[1][i],d1[2][i]),
+                        i) for i in xrange(numPoints)]
+                results = pool.map_async(computeResidue,cmds).get()
+                for r in results:
+                    p[r[0]] = r[1]
+                e[2]['p'] = p
+            except:
+                pass
+

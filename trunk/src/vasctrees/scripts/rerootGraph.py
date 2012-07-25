@@ -5,14 +5,15 @@ import cPickle
 import sys
 import numpy as np
 import vasctrees.viewGraph as viewGraph
+import vasctrees.SkeletonGraph as sg
 
-def readGraphs():
+def readGraphs(fname):
     try:
-        fo = gzip.open(sys.argv[1],"rb")
+        fo = gzip.open(fname,"rb")
         data = cPickle.load(fo)
         fo.close()
     except:
-        fo = file(sys.argv[1],"rb")
+        fo = file(fname,"rb")
         data = cPickle.load(fo)
         fo.close()
     return data
@@ -22,15 +23,32 @@ def rerootGraph(graph,newRoot):
     oldRoot = og.graph['root']
     path = nx.shortest_path(og,oldRoot,newRoot)
     og.graph["root"] = newRoot
+    reMap = []
     for i in xrange(len(path)-1):
         d = og[path[i]][path[i+1]]
+        d['path'] = d['path'][::-1]
+        d['wpath'] = d['wpath'][::-1]
+        print "%d surface points"%len(d['mappedPoints'])
         og.remove_edge(path[i],path[i+1])
         og.add_edge(path[i+1],path[i],attr_dict=d)
+        sg.fitEdge(og,(path[i+1],path[i]))
+    
 # I wonder if I need to reorder the edge attributes?
+    sg.safelyRemoveDegree2Nodes(og, reMap)
+    edges = og.out_edges(og.graph['root'], data=True)
+    for e in edges:
+        print e[2].keys()
+
+    #viewGraph.viewGraph2(og,root=og.graph['root'])
+    #raw_input('continue')
+    print "%d points to remap"%len(reMap)
+    sg.defineOrthogonalPlanes(og)
+    sg.remapVoxelsToGraph(og, reMap)
+    sg.mapPointsToPlanes(og)
     return og
 def main():
 
-    data = readGraphs()
+    data = readGraphs(sys.argv[1])
     num = int(sys.argv[2])
     label = sys.argv[3]
 
