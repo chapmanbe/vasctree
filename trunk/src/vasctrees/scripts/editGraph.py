@@ -37,8 +37,8 @@ def readGraphs(fname):
 class GraphViewer(object):
     def __init__(self,fname, objectnum = -1, keyname = ''):
         self.fname = fname
-        self.efile = file(fname+".error","w")
-        self.stderr = sys.stderr
+        #self.efile = file(fname+".error","w")
+        #self.stderr = sys.stderr
         #f = file(fname)
         #self.data = cPickle.load(f)
         self.data = readGraphs(fname)
@@ -126,6 +126,7 @@ class GraphViewer(object):
                 counter += 1
                 mp = e[2]["mappedPoints"]#np.concatenate((mp,e[2]["mappedPoints"]),axis=0)
                 sp = e[2]['d0']
+                
                 x = mp[::4,0]
                 y = mp[::4,1]
                 z = mp[::4,2]
@@ -134,14 +135,17 @@ class GraphViewer(object):
                 
                 # Create and visualize the mesh
                 # redirect sys.stderr for this step
-                sys.stderr = self.efile
+                #sys.stderr = self.efile
                 mesh = mlab.pipeline.delaunay3d(pts)
                 self.surfaces[(e[0],e[1])] = mlab.pipeline.surface(mesh,color=clr,opacity=0.1)
-                sys.stderr = self.stderr
+                #sys.stderr = self.stderr
                 pts = 0
-                self.lines[(e[0],e[1])] = mlab.plot3d(sp[0],sp[1],sp[2],color=clr, tube_radius=1.0)
-            except KeyError:
-                pass
+                if( sp ):
+                    self.lines[(e[0],e[1])] = mlab.plot3d(sp[0],sp[1],sp[2],color=clr, tube_radius=1.0)
+            except KeyError, error:
+                print "KeyError", error
+            except IndexError, error:
+                print "IndexError", error
         #mlab.view(47, 57, 8.2, (0.1, 0.15, 0.14))
         self.figure.scene.disable_render = False
         print "ready for editing"
