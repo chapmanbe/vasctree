@@ -121,17 +121,23 @@ def onpick(event):
     for subplotnum, dataind in enumerate(event.ind):
         print subplotnum, dataind
     return True    
-def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, degree = None, showSurface=True, root=None):
+def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
+        degree = None, showSurface=True, root=None, fileName = None, view=True ):
     """view an ordered graph generated using the SkeltonGraph class"""
     print "generating surface view"
     fig1 = pp.figure(fignum)
     ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,verbose=verbose,degree=degree,showSurface=True,showMidPlane=False,root=root)
     print "generating edge only view"
+    if( fileName ):
+        fig1.savefig(fileName+".fig1.png")
     fig2 = pp.figure(fignum+1)
     ax2 = get3DPlot(fig2, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,verbose=verbose,degree=degree,showSurface=False,showMidPlane=True,root=root)
     #cid = fig2.canvas.mpl_connect('button_press_event', onclick)
     fig2.canvas.mpl_connect('pick_event', onpick)
-    pp.show()
+    if( fileName ):
+        fig2.savefig(fileName+".fig2.png")
+    if( view ):
+        pp.show()
 def viewGraph1(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, degree = None, showSurface=True, root=None):
     """view an ordered graph generated using the SkeltonGraph class"""
     if( verbose ):

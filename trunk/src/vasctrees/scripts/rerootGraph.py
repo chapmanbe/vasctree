@@ -1,22 +1,11 @@
 #!/usr/bin/env python
 import networkx as nx
-import gzip
-import cPickle
 import sys
+from optparse import OptionParser
 import numpy as np
 import vasctrees.viewGraph as viewGraph
 import vasctrees.SkeletonGraph as sg
-
-def readGraphs(fname):
-    try:
-        fo = gzip.open(fname,"rb")
-        data = cPickle.load(fo)
-        fo.close()
-    except:
-        fo = file(fname,"rb")
-        data = cPickle.load(fo)
-        fo.close()
-    return data
+import vasctrees.utils as utils
 
 def rerootGraph(graph,newRoot):
     og = graph.copy()
@@ -46,36 +35,83 @@ def rerootGraph(graph,newRoot):
     sg.remapVoxelsToGraph(og, reMap)
     sg.mapPointsToPlanes(og)
     return og
+
+def getParser():
+    try:
+        parser = OptionParser()
+        parser.add_option("-f","--file",dest='fname',
+                          help='name or directory for fixedImage')
+        parser.add_option("--meanx",action='store_true', dest='do_meanx',
+                default=False)
+        parser.add_option("--medianx",action='store_true', dest='do_medianx',
+                default=False) 
+        parser.add_option("--rms",action='store_true', dest='do_rms',
+                default=False)
+
+        return parser
+    except Exception, error:
+        print "failed in getParser", error  
+        sys.exit(0)               
+
 def main():
+    parser = getParser()
+    (options, args) = parser.parse_args()
 
-    data = readGraphs(sys.argv[1])
-    num = int(sys.argv[2])
-    label = sys.argv[3]
+    data = utils.readGraphs(options.fname)
+    ogs = data['orderedGraphs']
+    if( ogs.has_key((1,"mp_graphs_edited")) ):
+        key = (1,"mp_graphs_edited")
+    elif( ogs.has_key((1,"mp_graphs")) ):
+        key = (1,"mp_graphs")
+    else:
+        key = utils.getOrderedGraphKeys(data['orderedGraphs'])
+    num = key[0]
+    label = key[1]
 
-    graph = data['orderedGraphs'][(num,label)]
+    graph = data['orderedGraphs'][key]
+    if( options.do_medianx):
 
-    endp = [n for n in graph.nodes() if graph.degree(n)==1]
-    endpa = np.array(endp)
-    medianx = np.median(endpa[:,0])
-    print "computing based on graph median of",medianx
-    endp.sort(key=lambda n: abs(n[0]-medianx))
-    newRoot = endp[0]
-    ng_medianx = rerootGraph(graph,newRoot)
-    ng_medianx.graph["root description"] = "root based on graph median x"
-    viewGraph.viewGraph2(ng_medianx, root=ng_medianx.graph['root'])
-    data['orderedGraphs'][(num,label+"_reroot_medianx")] = ng_medianx
-    meanx = np.mean(endpa[:,0])
-    print "computing based on graph mean of",meanx
-    endp.sort(key=lambda n: abs(n[0]-meanx))
-    newRoot = endp[0]
-    ng_meanx = rerootGraph(graph,newRoot)
-    ng_meanx.graph["root description"] = "root based on graph mean x"
-    viewGraph.viewGraph2(ng_meanx, root=ng_meanx.graph['root'])
-    data['orderedGraphs'][(num,label+"_reroot_meanx")] = ng_meanx
+        endp = [n for n in graph.nodes() if graph.degree(n)==1]
+        endpa = np.array(endp)
+        medianx = np.median(endpa[:,0])
+        print "computing based on graph median of",medianx
+        endp.sort(key=lambda n: abs(n[0]-medianx))
+        newRoot = endp[0]
+        ng_medianx = rerootGraph(graph,newRoot)
+        ng_medianx.graph["root description"] = "root based on graph median x"
+        viewGraph.viewGraph2(ng_medianx, root=ng_medianx.graph['root'], fileName=options.fname+".medianx",view=False)
+        data['orderedGraphs'][(num,label+"_reroot_medianx")] = ng_medianx
+    if( options.do_meanx ):
+        meanx = np.mean(endpa[:,0])
+        print "computing based on graph mean of",meanx
+        endp.sort(key=lambda n: abs(n[0]-meanx))
+        newRoot = endp[0]
+        ng_meanx = rerootGraph(graph,newRoot)
+        ng_meanx.graph["root description"] = "root based on graph mean x"
+        viewGraph.viewGraph2(ng_meanx, root=ng_meanx.graph['root'], fileName=options.fname+".meanx", view=False)
+        data['orderedGraphs'][(num,label+"_reroot_meanx")] = ng_meanx
 
-    fo = gzip.open(sys.argv[1],"wb")
-    cPickle.dump(data,fo)
-    fo.close()
+# Now what if I take the center most (say 50%) inner nodes and then pick
+# the node with the minimum z value
+
+    if( options.do_rms ):
+        endp = [(n[0],n[1]['wcrd']) for n in graph.nodes(data=True) if graph.degree(n[0]) == 1]
+        endpa = np.array([n[0] for n in endp])
+        maxk = np.max(endpa[:,2])
+        endp.sort(key=lambda n: np.sqrt((n[0][0]-256)**2+(n[0][1]-0)**2+(n[0][2]-maxk)**2))
+        endp_sub = endp # endp[::len(endp)/2]
+        print "examining %d of %d endpoints"%(len(endp_sub),len(endp))
+        #endp_sub.sort(key=lambda n: n[0][2])
+        print endp
+        print "selecting root node",endp_sub[0]
+        newRoot = endp[0][0]
+        ng_minz = rerootGraph(graph, newRoot)
+        ng_minz.graph["root description"] = "root based on mn z for center x nodes"
+        viewGraph.viewGraph2(ng_minz, root = ng_minz.graph['root'], fileName=options.fname+".rms", view=False)
+        data['orderedGraphs'][(num,label+"_reroot_rms_ijk")] = ng_minz
+
+    if( options.do_rms or options.do_meanx or options.do_medianx):
+        utils.writeGraphs(data,options.fname)
 
 if __name__ == '__main__':
     main()
