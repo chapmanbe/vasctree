@@ -569,12 +569,14 @@ def safelyRemoveNode(og,n, reMap):
     with adjacent edges are placed in reMap to be remapped"""
     preds = og.predecessors(n)
     for p in preds:
-        if( og[p][n].has_key("mappedPoints") ):
+        if( og[p][n].has_key("mappedPoints") and og[p][n]["mappedPoints"].shape[0]):
+            print "edge from deletion has",og[p][n]["mappedPoints"].shape,"points to remap"
             reMap.append(og[p][n]["mappedPoints"])
         deletedEdges = og.graph.get("deletedEdges",[])
         deletedEdges.append((p,n))
         og.graph["deletedEdges"] = deletedEdges
         og.remove_node(n)
+    print "now delete any nodes that are now degree 2"
     safelyRemoveDegree2Nodes(og, reMap)
         
 def safelyRemoveDegree2Nodes(og, reMap):
@@ -586,13 +588,13 @@ def safelyRemoveDegree2Nodes(og, reMap):
             pred = og.predecessors(n)[0]
             succ = og.successors(n)[0]
             p1 = og[pred][n]['path']
-            if( og[pred][n].has_key('mappedPoints') ):
+            if( og[pred][n].has_key('mappedPoints') and og[pred][n]["mappedPoints"].shape[0]):
                 reMap.append(og[pred][n]["mappedPoints"])
                 print "remapping %d points from predecessor"%len(og[pred][n]["mappedPoints"])
             else:
                 print "no mapped points for predecessor"
             p2 = og[n][succ]['path']
-            if( og[n][succ].has_key("mappedPoints") ):
+            if( og[n][succ].has_key("mappedPoints") and og[n][succ]["mappedPoints"].shape[0]):
                 reMap.append(og[n][succ]["mappedPoints"])
                 print "remapping %d points from successor "%len(og[n][succ]["mappedPoints"])
 
@@ -715,7 +717,7 @@ def remapVoxelsToGraph(og, reMap, verbose=True):
             points_toMap = np.concatenate((points_toMap,p),axis=0)
         except ValueError:
             print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
-            raw_input('continue')
+            #raw_input('continue')
     print points_toMap.shape
     mapVoxelsToGraph(og, points_toMap,worldCoordinates=True, verbose=False)
     reMap = []
