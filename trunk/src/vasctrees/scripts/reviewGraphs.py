@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import vasctrees.utils as utils
 import networkx as nx
 import sys
