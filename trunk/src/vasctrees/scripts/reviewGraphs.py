@@ -5,6 +5,26 @@ import sys
 import vasctrees.SkeletonGraph as sg
 import vasctrees.viewGraph as viewGraph
 
+def viewDictionary(d):
+    print "in viewDictionary"
+    while(True):
+        keys = d.keys()
+        prmpt = "Select key to display value\n" +'\t'.join(["%s"%k for k in keys])+"\nEnter to exit\n"
+        key = raw_input(prmpt)
+        try:
+            key = eval(key)
+        except:
+            pass
+        try:
+            v = d[key]
+            print type(v)
+            if( type(v) is dict ):
+                viewDictionary(v)
+            else:
+                print v
+        except Exception, error:
+            print error
+            break
 def getEdgeDepthMap(og):
     """returns the depth of each edge measured by the first node in the edge"""
     depthMap = nx.single_source_shortest_path_length(og,og.graph['root'])
@@ -39,28 +59,24 @@ def listEdges(og):
                                                                     edgeLengths[ed[1]])
 
 def viewEdge(og):
-    listEdges(og)
-    e1 = raw_input("enter starting node for edge")
-    e2 = raw_input("enter ending node for edge")
-    e = og.edge[e1][e2]
-    keys = e.keys()
-    keys.sort()
-    prompt = '\n'.join(keys)
     while(True):
         try:
-            k = raw_input("Enter key %s\n"%prompt)
-            print e[k]
-        except:
+            listEdges(og)
+            e1 = input("enter starting node for edge")
+            e2 = input("enter ending node for edge")
+            e = og.edge[e1][e2]
+            viewDictionary(e)
+        except KeyError:
             break
 def viewNode(og):
-    nodes = og.nodes()
-    nodes.sort()
-    print nodes
     while(True):
+        nodes = og.nodes()
+        nodes.sort()
+        print nodes
         try:
             n = raw_input('enter node')
-            print og.node[n]
-        except:
+            viewDictionary(n)
+        except KeyError:
             break
 
 
