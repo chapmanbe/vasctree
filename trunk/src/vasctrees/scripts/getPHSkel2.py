@@ -49,7 +49,7 @@ sg.defineOrthogonalPlanes(ogkey)
 dfe = ndi.distance_transform_cdt(oimg)
 points_toMap = np.array(np.nonzero(np.where(dfe==1,1,0))[::-1]).transpose().astype(np.int32)
 print "mapVoxelsToGraph"
-sg.mapVoxelsToGraph(points_toMap,ogkey)
+sg.mapVoxelsToGraph(points_toMap,ogkey, verbose=True)
 print "assignMappedPointsToPlanes"
 sg.assignMappedPointsToPlanes(ogkey)
 sg.saveCompressedGraphs(sys.argv[3])

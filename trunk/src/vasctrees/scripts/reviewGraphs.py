@@ -100,10 +100,10 @@ def selectRemoveNodes(og):
                 if( node == og.graph['root'] ):
                     print "cannot remove root node"
                     break
-                if( og.degree(node) == 1 ):
-                    removeNode(og,node)
-                else:
-                    print "can only remove degree one nodes"
+                #if( og.degree(node) == 1 ):
+                removeNode(og,node)
+                #else:
+                    #print "can only remove degree one nodes"
         else:
             break
         

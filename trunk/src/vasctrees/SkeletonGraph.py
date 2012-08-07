@@ -453,7 +453,11 @@ class SkeletonGraph(object):
         if worldCoordiantes=False and are converted to world coordinates (x,y,z)
         prior to mapping. If worldCoordiantes=True the data are assumed to be a """
         cg = self.orderedGraphs[key]
-        mapVoxelstoGraph(cg,points_toMap, mp_key=mp_key,worldCoordinates=worldCoordinates,verbose=verbose)
+        mapVoxelsToGraph(cg,points_toMap, mp_key=mp_key,
+                worldCoordinates=worldCoordinates,
+                origin=self.origin,
+                spacing=self.spacing,
+                verbose=verbose)
 
 
     def assignMappedPointsToPlanes(self, key, verbose=True):
@@ -568,6 +572,7 @@ def safelyRemoveNode(og,n, reMap):
     """removes node n from ordered graph og. Any mappedPoints associated
     with adjacent edges are placed in reMap to be remapped"""
     preds = og.predecessors(n)
+    succs = og.successors(n)
     for p in preds:
         if( og[p][n].has_key("mappedPoints") and og[p][n]["mappedPoints"].shape[0]):
             print "edge from deletion has",og[p][n]["mappedPoints"].shape,"points to remap"
@@ -576,6 +581,15 @@ def safelyRemoveNode(og,n, reMap):
         deletedEdges.append((p,n))
         og.graph["deletedEdges"] = deletedEdges
         og.remove_node(n)
+    for p in succs:
+        if( og[n][p].has_key("mappedPoints") and og[n][p]["mappedPoints"].shape[0]):
+            print "edge from deletion has",og[n][p]["mappedPoints"].shape,"points to remap"
+            reMap.append(og[n][p]["mappedPoints"])
+        deletedEdges = og.graph.get("deletedEdges",[])
+        deletedEdges.append((n,p))
+        og.graph["deletedEdges"] = deletedEdges
+        og.remove_node(n)
+
     print "now delete any nodes that are now degree 2"
     safelyRemoveDegree2Nodes(og, reMap)
         
@@ -728,7 +742,7 @@ def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=Fa
     prior to mapping. If worldCoordiantes=True the data are assumed to be a """
 
     # get the coordinates of the nonzero points of the mask that are not part of the skeleton
-    if( not worldCoordinates and origin and spacing ):
+    if( not worldCoordinates ):
         if( verbose ):
             print "transforming to world coordinates with",origin,spacing
         points = origin + spacing*points_toMap
@@ -741,7 +755,7 @@ def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=Fa
         print "couldn't get shape for points"
     pool = mp.Pool(mp.cpu_count())
     cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
-    print "points_toMap",points_toMap
+    print "points_toMap",points_toMap,type(points[0,:])
 
     results = pool.map_async(cmvtg.mapPToEdge, cmds)
     resultList = results.get()

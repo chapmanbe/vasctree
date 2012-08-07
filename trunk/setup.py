@@ -2,7 +2,7 @@ import ez_setup
 ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup(name='vasctree',
-      version='0.1.8',
+      version='0.1.8.1',
       description='Python Vascular Tree',
       author='Brian Chapman and Holly Berty',
       author_email='brchapman@ucsd.edu',
@@ -15,6 +15,7 @@ setup(name='vasctree',
                  'src/vasctrees/scripts/editGraph.py',
                  'src/vasctrees/scripts/rerootGraph.py',
                  'src/vasctrees/scripts/viewGraphs.py',
+                 'src/vasctrees/scripts/smoothSeg2.py',
                  'src/vasctrees/scripts/reviewGraphs.py',
                  'src/vasctrees/scripts/grabVolumes.py',],
      )
