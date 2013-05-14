@@ -112,7 +112,7 @@ def onclick(event):
         event.button, event.x, event.y, event.xdata, event.ydata)
 def onpick(event):
     print event.artist
-    if event.artist!=line: return True
+    if event.artist!='line': return True
 
     N = len(event.ind)
     if not N: return True
@@ -122,16 +122,18 @@ def onpick(event):
         print subplotnum, dataind
     return True    
 def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
-        degree = None, showSurface=True, root=None, fileName = None, view=True ):
+        degree = None, showSurface=True, root=None, fileName = None, view=True,theta=100,phi= 120):
     """view an ordered graph generated using the SkeltonGraph class"""
     print "generating surface view"
     fig1 = pp.figure(fignum)
     ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,verbose=verbose,degree=degree,showSurface=True,showMidPlane=False,root=root)
+    ax1.view_init(theta,phi)
     print "generating edge only view"
     if( fileName ):
         fig1.savefig(fileName+".fig1.png")
     fig2 = pp.figure(fignum+1)
     ax2 = get3DPlot(fig2, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,verbose=verbose,degree=degree,showSurface=False,showMidPlane=True,root=root)
+    ax2.view_init(theta,phi)
     #cid = fig2.canvas.mpl_connect('button_press_event', onclick)
     fig2.canvas.mpl_connect('pick_event', onpick)
     if( fileName ):
