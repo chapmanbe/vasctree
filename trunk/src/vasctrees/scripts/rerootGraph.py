@@ -45,6 +45,8 @@ def getParser():
                 default=False)
         parser.add_option("--medianx",action='store_true', dest='do_medianx',
                 default=False) 
+        parser.add_option("--label",dest="graphLabel",default="mp_graphs")
+        parser.add_option("--number",dest="graphNumber",default=1,type="int")
         parser.add_option("--rms",action='store_true', dest='do_rms',
                 default=False)
 
@@ -59,12 +61,11 @@ def main():
 
     data = utils.readGraphs(options.fname)
     ogs = data['orderedGraphs']
-    if( ogs.has_key((1,"mp_graphs_edited")) ):
-        key = (1,"mp_graphs_edited")
-    elif( ogs.has_key((1,"mp_graphs")) ):
-        key = (1,"mp_graphs")
-    else:
+    key = (options.graphNumber,options.graphLabel)
+    if( not ogs.has_key(key) ):
         key = utils.getOrderedGraphKeys(data['orderedGraphs'])
+
+    print "procesing graph with key",key
     num = key[0]
     label = key[1]
 
@@ -107,7 +108,7 @@ def main():
         newRoot = endp[0][0]
         ng_minz = rerootGraph(graph, newRoot)
         ng_minz.graph["root description"] = "root based on mn z for center x nodes"
-        viewGraph.viewGraph2(ng_minz, root = ng_minz.graph['root'], fileName=options.fname+".rms", view=False)
+        viewGraph.viewGraph2(ng_minz, root = ng_minz.graph['root'], fileName="%s_%d_%s.rms"%(options.fname,num,label), view=False)
         data['orderedGraphs'][(num,label+"_reroot_rms_ijk")] = ng_minz
 
     if( options.do_rms or options.do_meanx or options.do_medianx):

@@ -21,21 +21,13 @@ import numpy as np
 import sys
 from optparse import OptionParser
 from vasctrees.SkeletonGraph import SkeletonGraph
+from vasctrees.utils import readGraphs, writeGraphs
 from mayavi import mlab
-import gzip
-def readGraphs(fname):
-    try:
-        fo = gzip.open(fname,"rb")
-        data = cPickle.load(fo)
-        fo.close()
-    except:
-        fo = file(fname,"rb")
-        data = cPickle.load(fo)
-        fo.close()
-    return data
+import os
+os.environ['ETS_TOOLKIT'] = 'qt4'
 
 class GraphViewer(object):
-    def __init__(self,fname, objectnum = -1, keyname = ''):
+    def __init__(self,fname, objectnum = -1, keyname = '', newsuffix = "_edited"):
         self.fname = fname
         #self.efile = file(fname+".error","w")
         #self.stderr = sys.stderr
@@ -60,7 +52,7 @@ class GraphViewer(object):
         # point.
         self.editnum = 1
         # create a new key and copy of graph
-        newKey = (self.key[0],"%s_edited"%(self.key[1],))
+        newKey = (self.key[0],"%s%s"%(self.key[1],newsuffix,))
         self.sg.orderedGraphs[newKey] = self.sg.orderedGraphs[self.key].copy()
         self.key = newKey
         self.deleteNode = None
@@ -69,9 +61,7 @@ class GraphViewer(object):
         print "saving modified data"
         self.data['orderedGraphs'] = self.sg.orderedGraphs
         #f = file(self.fname,"wb")
-        f = gzip.open(self.fname,"wb")
-        cPickle.dump(self.data,f)
-        f.close()
+        writeGraphs(self.data,self.fname)
     def _setGraphData(self):
         self.og = self.sg.orderedGraphs[self.key]
         self.edges = self.og.edges(data=True)
@@ -211,6 +201,7 @@ def getParser():
                           help='name or directory for fixedImage')
         parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
         parser.add_option('-l','--label',dest='label',default='')
+        parser.add_option("-e","--edit_label",dest="edit_suffix",default="_edited")
 
         return parser
     except Exception, error:
@@ -220,6 +211,6 @@ def getParser():
 if __name__ == '__main__':
     parser = getParser()
     (options, args) = parser.parse_args()
-    gv = GraphViewer(options.fname, objectnum = options.objNum, keyname=options.label)
+    gv = GraphViewer(options.fname, objectnum = options.objNum, keyname=options.label, newsuffix=options.edit_suffix)
     gv.drawGraph()
     
