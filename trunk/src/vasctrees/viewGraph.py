@@ -121,6 +121,17 @@ def onpick(event):
     for subplotnum, dataind in enumerate(event.ind):
         print subplotnum, dataind
     return True    
+def viewUndirectedGraph(og, fignum=1, subsample=4, verbose=True, 
+        degree = None, fileName = None, view=True ):
+    """view an ordered graph generated using the SkeltonGraph class"""
+    fig1 = pp.figure(fignum)
+    ax1 = get3DPlotUndirected(fig1, og, verbose=verbose,degree=degree)
+    if( fileName ):
+        fig1.savefig(fileName+"_undirected.fig1.png")
+    fig1.canvas.mpl_connect('pick_event', onpick)
+    if( view ):
+        pp.show()
+
 def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
         degree = None, showSurface=True, root=None, fileName = None, view=True,theta=100,phi= 120):
     """view an ordered graph generated using the SkeltonGraph class"""

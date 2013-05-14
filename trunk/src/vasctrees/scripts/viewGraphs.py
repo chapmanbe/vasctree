@@ -4,6 +4,8 @@ import sys
 import vasctrees.viewGraph as viewGraph
 import networkx as nx
 import os
+import sys
+from optparse import OptionParser
 from mpl_toolkits.mplot3d import axes3d,Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FixedLocator, FormatStrFormatter
@@ -51,14 +53,47 @@ def getGraphFromData(data,datakey,graphkey):
         key = getKey(graphClass)
         g = graphClass[key]
     return g
+def getParser():
+    try:
+        parser = OptionParser()
+        parser.add_option("-f","--file",dest='fname',
+                          help='name or directory for fixedImage')
+        parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
+        parser.add_option('-l','--label',dest='label',default='')
+        parser.add_option("-u","--unordered",action='store_true', dest='view_unordered',
+                default=False) 
+
+
+        return parser
+    except Exception, error:
+        print "failed in getParser", error  
+        sys.exit(0)
+def getSkelGraphKeys(grphs):
+    keys = grphs.keys()
+    tmp = 'enter key for graph to view\n'
+    for k in keys:
+        tmp += "%s\tgraph size %d\n"%(k,nx.number_of_nodes(grphs[k]))
+
+    while(True):
+        selected_key = input(tmp)
+        if( selected_key in keys ):
+            return selected_key
 
 def main():
     #fo=open(sys.argv[1])
-    data = readGraphs(sys.argv[1])
-    num = 1 # it is always one
-    datakey = sys.argv[2]
-    label = sys.argv[3]
-    og = getGraphFromData(data,datakey,(num,label))
-    viewGraph.viewGraph2(og, root=og.graph.get('root',None))
+    parser = getParser()
+    (options, args) = parser.parse_args()
+
+    data = readGraphs(options.fname)
+    if( options.view_unordered ):
+        datakey = "skelGraphs"
+        graphKey = getSkelGraphKeys(data[datakey])
+        viewGraph.viewUndirectedGraph(data[datakey][graphKey])
+    else:
+        datakey = "orderedGraphs"
+        label = options.label
+        num = options.objNum
+        og = getGraphFromData(data,datakey,(num,label))
+        viewGraph.viewGraph2(og, root=og.graph.get('root',None))
 if __name__ == '__main__':
     main()
