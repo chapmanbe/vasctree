@@ -47,12 +47,12 @@ def getGraphFromData(data,datakey,graphkey):
     return g
 def getParser():
     try:
-        parser = argparse.ArgumentParser(description="command line processer for processReports")
-        parser.add_option("-f","--file",dest='fname',
+        parser = argparse.ArgumentParser(description="command line processer for viewGraphs.py")
+        parser.add_argument("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_option("-o","--object_number",dest='objNum',type=int,default='-1')
-        parser.add_option('-l','--label',dest='label',default='')
-        parser.add_option("-u","--unordered",action='store_true', dest='view_unordered',
+        parser.add_argument("-o","--object_number",dest='objNum',type=int,default=-1)
+        parser.add_argument('-l','--label',dest='label',default='')
+        parser.add_argument("-u","--unordered",action='store_true', dest='view_unordered',
                 default=False) 
 
 
@@ -74,7 +74,7 @@ def getSkelGraphKeys(grphs):
 def main():
     #fo=open(sys.argv[1])
     parser = getParser()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     data = readGraphs(options.fname)
     if( options.view_unordered ):

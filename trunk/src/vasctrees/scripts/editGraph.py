@@ -16,10 +16,9 @@ graph-key the string label associated with the graph.
 
 If the graph is modified, a new graph is added to the SkeletonGraph object with
 a graph-key equal to the specified graph-key concatenated with '_edited'"""
-import cPickle
 import numpy as np
 import sys
-from optparse import OptionParser
+import argparse
 from vasctrees.SkeletonGraph import SkeletonGraph
 from vasctrees.utils import readGraphs, writeGraphs
 from mayavi import mlab
@@ -196,12 +195,12 @@ def getOrderedGraphKeys(ogs):
     return None
 def getParser():
     try:
-        parser = OptionParser()
-        parser.add_option("-f","--file",dest='fname',
+        parser = argparse.ArgumentParser(description="command line parser for editGraph.py")
+        parser.add_argument("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
-        parser.add_option('-l','--label',dest='label',default='')
-        parser.add_option("-e","--edit_label",dest="edit_suffix",default="_edited")
+        parser.add_argument("-o","--object_number",dest='objNum',type=int,default=-1)
+        parser.add_argument('-l','--label',dest='label',default='')
+        parser.add_argument("-e","--edit_label",dest="edit_suffix",default="_edited")
 
         return parser
     except Exception, error:
@@ -210,7 +209,7 @@ def getParser():
         
 if __name__ == '__main__':
     parser = getParser()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     gv = GraphViewer(options.fname, objectnum = options.objNum, keyname=options.label, newsuffix=options.edit_suffix)
     gv.drawGraph()
     

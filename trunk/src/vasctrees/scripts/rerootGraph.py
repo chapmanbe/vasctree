@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import networkx as nx
 import sys
-from optparse import OptionParser
 import numpy as np
 import vasctrees.viewGraph as viewGraph
 import vasctrees.SkeletonGraph as sg
 import vasctrees.utils as utils
+import argparse
 
 def rerootGraph(graph,newRoot):
     og = graph.copy()
@@ -38,16 +38,16 @@ def rerootGraph(graph,newRoot):
 
 def getParser():
     try:
-        parser = OptionParser()
-        parser.add_option("-f","--file",dest='fname',
+        parser = argparse.ArgumentParser(description="rerootGraph.py command line parser")
+        parser.add_argument("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_option("--meanx",action='store_true', dest='do_meanx',
+        parser.add_argument("--meanx",action='store_true', dest='do_meanx',
                 default=False)
-        parser.add_option("--medianx",action='store_true', dest='do_medianx',
+        parser.add_argument("--medianx",action='store_true', dest='do_medianx',
                 default=False) 
-        parser.add_option("--label",dest="graphLabel",default="mp_graphs")
-        parser.add_option("--number",dest="graphNumber",default=1,type="int")
-        parser.add_option("--rms",action='store_true', dest='do_rms',
+        parser.add_argument("--label",dest="graphLabel",default="mp_graphs")
+        parser.add_argument("--number",dest="graphNumber",default=1,type=int)
+        parser.add_argument("--rms",action='store_true', dest='do_rms',
                 default=False)
 
         return parser

@@ -8,7 +8,7 @@ import SimpleITK as sitk
 def getParser():
     """Generates command line parser for specifying database and other parameters"""
 
-    parser = argparse.ArgumentParser(description="command line processer for processReports")
+    parser = argparse.ArgumentParser(description="command line processer for getPulmonaryArteryModel.py")
     parser.add_argument("-s","--skel_img",dest='skel_img',default='',
                       help='file name for skeleton image')
     parser.add_argument("-o","--orig_img",dest='orig_img',
