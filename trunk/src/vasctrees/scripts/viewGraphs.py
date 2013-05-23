@@ -3,15 +3,7 @@ import cPickle
 import sys
 import vasctrees.viewGraph as viewGraph
 import networkx as nx
-import os
-import sys
-from optparse import OptionParser
-from mpl_toolkits.mplot3d import axes3d,Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FixedLocator, FormatStrFormatter
-import matplotlib as mpl
-import matplotlib.pyplot as pp
-import numpy as np
+import argparse
 import gzip
 def readGraphs(fname):
     try:
@@ -55,10 +47,10 @@ def getGraphFromData(data,datakey,graphkey):
     return g
 def getParser():
     try:
-        parser = OptionParser()
+        parser = argparse.ArgumentParser(description="command line processer for processReports")
         parser.add_option("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
+        parser.add_option("-o","--object_number",dest='objNum',type=int,default='-1')
         parser.add_option('-l','--label',dest='label',default='')
         parser.add_option("-u","--unordered",action='store_true', dest='view_unordered',
                 default=False) 
