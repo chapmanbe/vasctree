@@ -52,6 +52,8 @@ def getParser():
                           help='name or directory for fixedImage')
         parser.add_argument("-o","--object_number",dest='objNum',type=int,default=-1)
         parser.add_argument('-l','--label',dest='label',default='')
+        parser.add_argument('-s','--surface_display_off',dest='surface_display',action='store_false',default=True)
+        parser.add_argument('-m','--midplane_display_off',dest='midplane_display',action='store_false',default=True)
         parser.add_argument("-u","--unordered",action='store_true', dest='view_unordered',
                 default=False) 
 
@@ -86,6 +88,6 @@ def main():
         label = options.label
         num = options.objNum
         og = getGraphFromData(data,datakey,(num,label))
-        viewGraph.viewGraph2(og, root=og.graph.get('root',None))
+        viewGraph.viewGraph2(og, root=og.graph.get('root',None), showSurface=options.surface_display, showMidPlane=options.midplane_display)
 if __name__ == '__main__':
     main()
