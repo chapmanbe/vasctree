@@ -18,10 +18,10 @@ a graph-key equal to the specified graph-key concatenated with '_volume'"""
 import cPickle
 import numpy as np
 import sys
-from optparse import OptionParser
+import argparse
 from vasctrees.SkeletonGraph import SkeletonGraph
-import imageTools.ITKUtils.io as io
 import scipy.ndimage as ndi
+import SimpleITK as sitk
 
 class VolumeGrabber(object):
     def __init__(self,fname, objectnum = -1, keyname = '', img='',lvalue=1):
@@ -48,10 +48,8 @@ class VolumeGrabber(object):
         self.key = newKey
    
     def readImage(self):
-        self.simg,self.descr = io.readImage( self.imgfile,
-                          returnITK=False,
-                         imgMode='uchar',
-                         returnDescriptors = True)
+        sitkimg = sitk.ReadImage(self.imgfile)
+        self.simg = sitk.GetArrayFromImage(sitkimg)
         self.dfe = ndi.distance_transform_cdt(self.simg)
         cg = self.sg.orderedGraphs[self.key]
         self.sg.spacing=cg.graph["spacing"]
@@ -112,13 +110,13 @@ def getOrderedGraphKeys(ogs):
     return None
 def getParser():
     try:
-        parser = OptionParser()
-        parser.add_option("-f","--file",dest='fname',
+        parser = argparse.ArgumentParser(description="command line processor for grabVolumes")
+        parser.add_argument("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_option("-o","--object_number",dest='objNum',type='int',default='-1')
-        parser.add_option("-v","--value",dest="lvalue",type='int',default='1')
-        parser.add_option("-i","--img",dest="img",default="",help="name or directory of segmented image")
-        parser.add_option('-l','--label',dest='label',default='')
+        parser.add_argument("-o","--object_number",dest='objNum',type='int',default='-1')
+        parser.add_argument("-v","--value",dest="lvalue",type='int',default='1')
+        parser.add_argument("-i","--img",dest="img",default="",help="name or directory of segmented image")
+        parser.add_argument('-l','--label',dest='label',default='')
 
         return parser
     except Exception, error:
