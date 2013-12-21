@@ -20,6 +20,7 @@ import numpy as np
 import sys
 import argparse
 from vasctrees.SkeletonGraph import SkeletonGraph
+import vasctrees.utils as utils
 import scipy.ndimage as ndi
 import SimpleITK as sitk
 
@@ -27,9 +28,7 @@ class VolumeGrabber(object):
     def __init__(self,fname, objectnum = -1, keyname = '', img='',lvalue=1):
         self.fname = fname
         self.lvalue = lvalue
-        f = file(fname)
-        self.data = cPickle.load(f)
-        f.close()
+        self.data = utils.readGraphs(fname)
         self.imgfile = img
         if( objectnum == -1 or keyname == ''):
             self.key = getOrderedGraphKeys(self.data['orderedGraphs'])
@@ -113,8 +112,8 @@ def getParser():
         parser = argparse.ArgumentParser(description="command line processor for grabVolumes")
         parser.add_argument("-f","--file",dest='fname',
                           help='name or directory for fixedImage')
-        parser.add_argument("-o","--object_number",dest='objNum',type='int',default='-1')
-        parser.add_argument("-v","--value",dest="lvalue",type='int',default='1')
+        parser.add_argument("-o","--object_number",dest='objNum',type=int,default=-1)
+        parser.add_argument("-v","--value",dest="lvalue",type=int,default=1)
         parser.add_argument("-i","--img",dest="img",default="",help="name or directory of segmented image")
         parser.add_argument('-l','--label',dest='label',default='')
 
@@ -125,7 +124,7 @@ def getParser():
         
 if __name__ == '__main__':
     parser = getParser()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     gv = VolumeGrabber(options.fname, objectnum = options.objNum, 
                        keyname=options.label,img=options.img,
                        lvalue=options.lvalue)

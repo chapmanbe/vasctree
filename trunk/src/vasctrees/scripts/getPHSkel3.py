@@ -16,6 +16,7 @@ def readImage(fname):
     return aimg, descriptors
 
 simg,descr = readImage( sys.argv[1] )
+
 try:
     simg
 except:
@@ -27,8 +28,8 @@ sg = SkeletonGraph(img=simg,
                    orientation=descr['orientation'],
 		   label = sys.argv[1])
 
-print descr
-print sg.spacing, sg.origin, sg.orientation
+##print descr
+#print sg.spacing, sg.origin, sg.orientation
 
 oimg,tmp = readImage( sys.argv[2])
 try:
@@ -45,9 +46,7 @@ endpa = np.array(endp)
 medianx = np.median(endpa[:,0])
 endp.sort(key=lambda n: abs(n[0]-medianx))
 root = endp[0]
-print "identified root from median is",root
 #sg.viewGraph()
-raw_input('continue')
 sg.setRoot(root,key="og_medianx")
 sg.traceEndpoints(key='og_medianx')
 ogkey = sg.getLargestOrderedGraphKey()
@@ -55,13 +54,13 @@ sg.deleteDegree2Nodes(ogkey)
 sg.prunePaths(ogkey)
 sg.deleteDegree2Nodes(ogkey)
 sg.fitEdges(key=ogkey)
-print "Define orthogonal planes"
+#print "Define orthogonal planes"
 sg.defineOrthogonalPlanes(ogkey)
 # Now get surface points of original image to map to the centerlines
 dfe = ndi.distance_transform_cdt(oimg)
 points_toMap = np.array(np.nonzero(np.where(dfe==1,1,0))[::-1]).transpose().astype(np.int32)
-print "mapVoxelsToGraph"
+#print "mapVoxelsToGraph"
 sg.mapVoxelsToGraph(points_toMap,ogkey)
-print "assignMappedPointsToPlanes"
+#print "assignMappedPointsToPlanes"
 sg.assignMappedPointsToPlanes(ogkey)
 sg.saveCompressedGraphs(sys.argv[3])
