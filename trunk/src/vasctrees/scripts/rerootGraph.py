@@ -57,7 +57,7 @@ def getParser():
 
 def main():
     parser = getParser()
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     data = utils.readGraphs(options.fname)
     ogs = data['orderedGraphs']
