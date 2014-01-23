@@ -47,6 +47,7 @@ class SkeletonGraph(object):
         self.reMap = []
         self.deletedEdges = {}
         self.VERBOSE = False
+        self.pool = mp.Pool(mp.cpu_count())
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
         g.graph["imgSize"] = self.img.shape
@@ -98,17 +99,12 @@ class SkeletonGraph(object):
             if( verbose ): print "generating graph from skeleton"
             g = cmvtg.getGraphsFromSkeleton(m,crds)
             self._populateImageFeaturesToGraph(g)
-            if( verbose ):
-                self.cg = g
-                self.viewCurrentGraph()
             ep, bif = cmvtg.findEndpointsBifurcations(g)
             #print "Number of pre-pruning bifurcations",len(bif)
             g = cmvtg.pruneUndirectedBifurcations(g,bif)
-            if( verbose ):
-                self.cg = g
-                self.viewCurrentGraph()
             ep, bif = cmvtg.findEndpointsBifurcations(g)
             #print "Number of post-pruning bifurcations",len(bif)
+            self.getNodesWorldCoordinates(g)
             self.graphs[i] = g
 
     def viewGraph(self,graph = None):
@@ -420,11 +416,12 @@ class SkeletonGraph(object):
                 try:
                     numPoints = len(d0[0])
                     p = np.zeros((numPoints),dtype=np.float64)
-                    pool = mp.Pool(mp.cpu_count())
+                    
+                    #pool = mp.Pool(mp.cpu_count())
                     cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                             (d1[0][i],d1[1][i],d1[2][i]),
                             i) for i in xrange(numPoints)]
-                    results = pool.map_async(computeResidue,cmds).get()
+                    results = self.pool.map_async(computeResidue,cmds).get()
                     for r in results:
                         p[r[0]] = r[1]
                     e[2]['p'] = p
@@ -449,7 +446,7 @@ class SkeletonGraph(object):
         # I wonder if I need to reorder the edge attributes?
         #safelyRemoveDegree2Nodes(cg,self.reMap)
         #self.remapVoxelsToGraph(key)
-    def remapVoxelsToGraph(self,key, verbose=True):
+    def remapVoxelsToGraph(self,key, verbose=False):
         """take the pool of points stored in self.reMap and map them to edges
         in the graph"""
         remapVoxelsToGraph(self.orderedGraphs[key],self.reMap,verbose=True)
@@ -471,7 +468,7 @@ class SkeletonGraph(object):
         """takes the mapped points associated with each edge and maps them
         to the orthogonal planes associated with specific points on the fitted
         path"""
-        mapPointsToPlanes(self.orderedGraphs[key],verbose=verbose)
+        mapPointsToPlanes(self.orderedGraphs[key],self.pool, verbose=verbose)
 
 # Utility FUNCTIONS
 def reverseEdgeAttributes(edgeData):
@@ -702,7 +699,7 @@ def fitEdge(og,e,VERBOSE=False):
         og[e[0]][e[1]]['d0'] = None
         og[e[0]][e[1]]['d1'] = None
         og[e[0]][e[1]]['d2'] = None
-def mapPointsToPlanes(og, verbose=False):
+def mapPointsToPlanes(og, pool, verbose=False):
     """takes the mapped points associated with each edge and maps them
     to the orthogonal planes associated with specific points on the fitted
     path"""
@@ -725,7 +722,7 @@ def mapPointsToPlanes(og, verbose=False):
                 numPoints = len(mps) # get the number of points on the fitted edge
                 cmds = [(d1s,ps,mps[i]) for i in range(numPoints)]
                 results = []
-                pool = mp.Pool(mp.cpu_count())
+                #pool = mp.Pool(mp.cpu_count())
                 results = pool.map_async(cmvtg.checkInPlane,cmds).get()
                 planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
             e[2]["planePoints"] = planePoints
@@ -749,7 +746,7 @@ def remapVoxelsToGraph(og, reMap, verbose=True):
     if( verbose ): print points_toMap.shape
     mapVoxelsToGraph(og, points_toMap,worldCoordinates=True, verbose=False)
     reMap = []
-def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
+def mapVoxelsToGraph(cg, pool, points_toMap, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
     """maps each voxel specified in points_toMap to a particular graph edge.
     points_toMap  is assumed to be a Nx3 array of image coordinates (i,j,k)
     if worldCoordiantes=False and are converted to world coordinates (x,y,z)
@@ -767,7 +764,7 @@ def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=Fa
         if( verbose ): print points.shape
     except:
         if( verbose ): print "couldn't get shape for points"
-    pool = mp.Pool(mp.cpu_count())
+    #pool = mp.Pool(mp.cpu_count())
     cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
     if( verbose ): print "points_toMap",points_toMap,type(points[0,:])
 
@@ -795,7 +792,7 @@ def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=Fa
                 pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
     for e in mdata.keys():
         cg[e[0]][e[1]][mp_key].shape
-def defineOrthogonalPlanes(og):
+def defineOrthogonalPlanes(og,pool):
     edges = og.edges(data=True)
     for e in edges:
         if( e[2].has_key('d0') ):
@@ -804,7 +801,7 @@ def defineOrthogonalPlanes(og):
             try:
                 numPoints = len(d0[0])
                 p = np.zeros((numPoints),dtype=np.float64)
-                pool = mp.Pool(mp.cpu_count())
+                #pool = mp.Pool(mp.cpu_count())
                 cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                         (d1[0][i],d1[1][i],d1[2][i]),
                         i) for i in xrange(numPoints)]
