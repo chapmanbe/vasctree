@@ -3,7 +3,8 @@ import os
 from mpl_toolkits.mplot3d import axes3d,Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FixedLocator, FormatStrFormatter
-import matplotlib as mpl
+import matplotlib as mpl_connect
+import matplotlib.colors as colors
 import matplotlib.pyplot as pp
 import numpy as np
 def get3DPlotUndirected(fig, og,
@@ -38,6 +39,51 @@ def get3DPlotUndirected(fig, og,
     ax.scatter(barray[:,0],barray[:,1],barray[:,2],color='b',marker='o',linewidth=8, picker=5)
 
     
+    
+    ax.w_zaxis.set_major_locator(LinearLocator(3))
+    ax.w_xaxis.set_major_locator(LinearLocator(3))
+    ax.w_yaxis.set_major_locator(LinearLocator(3))
+    return ax
+
+def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4, 
+              degree = None, showSurface=True, 
+              root=None):
+    ax = Axes3D(fig)
+    edges = og.edges(data=True)
+    nodes = og.nodes(data=True)
+    narray = np.zeros((len(nodes),3),np.float32)  
+    axes = ax.get_axes()
+    axes.set_axis_off()
+    ax.set_axes(axes)
+    pp.set_cmap('jet')
+    vmax = np.max(mapping.values())
+    vmin = np.min(mapping.values())
+    cNorm = colors.Normalize(vmin=vmin,vmax=vmax) 
+    scalarMap = cm.ScalarMappable(norm=cNorm,cmap=pp.get_cmap('jet'))
+    if( root ):
+        rcrd = og.node[root]["wcrd"]
+        ax.text(rcrd[0],rcrd[1],root[2],"Root")        
+    ss = 4
+    for e in edges:
+        try:
+            sp = e[2]['d0']
+            mps = e[2]['mappedPoints']
+            clr = scalarMap.to_rgba(mapping[(e[0],e[1])])
+            print "%s with mapping %s maps to color %s"%((e[0],e[1]),mapping[(e[0],e[1])],clr)
+            ax.plot(sp[0],sp[1],sp[2],color = clr)
+            try:
+                ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.15)
+            except Exception, error:
+                pass
+
+        except KeyError:
+            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+        except TypeError:
+            if( e[2]['d0'] == None ):
+                print "No fitted data for edge (%s,%s)"%(e[0],e[1])
+            
+    ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
+    ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
     
     ax.w_zaxis.set_major_locator(LinearLocator(3))
     ax.w_xaxis.set_major_locator(LinearLocator(3))
@@ -129,6 +175,34 @@ def viewUndirectedGraph(og, fignum=1, subsample=4, verbose=True,
     if( fileName ):
         fig1.savefig(fileName+"_undirected.fig1.png")
     fig1.canvas.mpl_connect('pick_event', onpick)
+    if( view ):
+        pp.show()
+def viewSurfaceGraph(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
+        degree = None, root=None, fileName = None, view=True,theta=100,phi= 120):
+    """view an ordered graph generated using the SkeltonGraph class"""
+    print "generating surface view"
+    fig1 = pp.figure(fignum)
+    ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,
+                    alpha=alpha,subsample=subsample,
+                    verbose=verbose,degree=degree,
+                    showSurface=True,showMidPlane=False,root=root)
+    ax1.view_init(theta,phi)
+    if( fileName ):
+        fig1.savefig(fileName+".surface_fig.png")
+
+    if( view ):
+        pp.show()
+        
+def viewGraphWithMapping(og, mapping, fignum=1,  alpha=0.05,subsample=4, verbose=True, 
+        degree = None, showSurface=True, root=None, fileName = None, 
+        view=True,theta=100,phi= 120):
+    """view an ordered graph generated using the SkeltonGraph class"""
+    fig1 = pp.figure(fignum)
+    ax1 = getGraphWithMapping(fig1, og, mapping, alpha=alpha, subsample=subsample,
+                              degree=degree, showSurface=showSurface,root=root)
+    ax1.view_init(theta,phi)
+    if( fileName ):
+        fig1.savefig(fileName+".mapping.png")
     if( view ):
         pp.show()
 
