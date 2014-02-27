@@ -47,7 +47,8 @@ def get3DPlotUndirected(fig, og,
 
 def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4, 
               degree = None, showSurface=True, 
-              root=None):
+              root=None,
+              colormap = 'jet'):
     ax = Axes3D(fig)
     edges = og.edges(data=True)
     nodes = og.nodes(data=True)
@@ -55,11 +56,11 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
     axes = ax.get_axes()
     axes.set_axis_off()
     ax.set_axes(axes)
-    pp.set_cmap('jet')
+    pp.set_cmap(colormap)
     vmax = np.max(mapping.values())
     vmin = np.min(mapping.values())
     cNorm = colors.Normalize(vmin=vmin,vmax=vmax) 
-    scalarMap = cm.ScalarMappable(norm=cNorm,cmap=pp.get_cmap('jet'))
+    scalarMap = cm.ScalarMappable(norm=cNorm,cmap=pp.get_cmap(colormap))
     if( root ):
         rcrd = og.node[root]["wcrd"]
         ax.text(rcrd[0],rcrd[1],root[2],"Root")        
@@ -72,7 +73,7 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
             print "%s with mapping %s maps to color %s"%((e[0],e[1]),mapping[(e[0],e[1])],clr)
             ax.plot(sp[0],sp[1],sp[2],color = clr)
             try:
-                ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.15)
+                ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=alpha)
             except Exception, error:
                 pass
 
@@ -193,13 +194,15 @@ def viewSurfaceGraph(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, ver
     if( view ):
         pp.show()
         
-def viewGraphWithMapping(og, mapping, fignum=1,  alpha=0.05,subsample=4, verbose=True, 
+def viewGraphWithMapping(og, mapping, fignum=1,  alpha=0.05,subsample=4, 
+				colormap='jet', verbose=True, 
         degree = None, showSurface=True, root=None, fileName = None, 
         view=True,theta=100,phi= 120):
     """view an ordered graph generated using the SkeltonGraph class"""
     fig1 = pp.figure(fignum)
     ax1 = getGraphWithMapping(fig1, og, mapping, alpha=alpha, subsample=subsample,
-                              degree=degree, showSurface=showSurface,root=root)
+                              degree=degree, showSurface=showSurface,root=root,
+                              colormap=colormap)
     ax1.view_init(theta,phi)
     if( fileName ):
         fig1.savefig(fileName+".mapping.png")
