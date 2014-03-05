@@ -72,10 +72,11 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
             clr = scalarMap.to_rgba(mapping[(e[0],e[1])])
             print "%s with mapping %s maps to color %s"%((e[0],e[1]),mapping[(e[0],e[1])],clr)
             ax.plot(sp[0],sp[1],sp[2],color = clr)
-            try:
-                ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=alpha)
-            except Exception, error:
-                pass
+            if showSurface :
+                try:
+                    ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=alpha)
+                except Exception:
+                    pass
 
         except KeyError:
             print "cannot plot edge (%s,%s)"%(e[0],e[1])
