@@ -805,6 +805,7 @@ def defineOrthogonalPlanes(og,pool):
                 for r in results:
                     p[r[0]] = r[1]
                 e[2]['p'] = p
-            except:
+            except Exception, error:
+                print "defineOrthogonalPlanes",error
                 pass
 
