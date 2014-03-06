@@ -7,11 +7,9 @@ import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import math
-import multiprocessing as mp
 from scipy.interpolate.fitpack import splev
 from scipy.interpolate.fitpack import splprep
 import gzip
-pool = mp.Pool(mp.cpu_count())
 
 class SkeletonGraph(object):
     """Class defined for identifying the neighbors (generating the graphs) of each point within a skeleton, 
@@ -21,7 +19,8 @@ class SkeletonGraph(object):
                  spacing = None, 
                  origin = None, 
                  orientation = None,
-                 label = ''):
+                 label = '',
+                 pool= None):
         if( spacing != None ):
             self.spacing = np.array(spacing, dtype=np.float64)
         else:
@@ -48,6 +47,7 @@ class SkeletonGraph(object):
         self.reMap = []
         self.deletedEdges = {}
         self.VERBOSE = False
+        self.pool = pool
     def _populateImageFeaturesToGraph(self,g):
         """transfer the image features to the graph g"""
         g.graph["imgSize"] = self.img.shape
@@ -420,7 +420,7 @@ class SkeletonGraph(object):
                     cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                             (d1[0][i],d1[1][i],d1[2][i]),
                             i) for i in xrange(numPoints)]
-                    results = pool.map_async(computeResidue,cmds).get()
+                    results = self.pool.map_async(computeResidue,cmds).get()
                     for r in results:
                         p[r[0]] = r[1]
                     e[2]['p'] = p
@@ -448,7 +448,7 @@ class SkeletonGraph(object):
     def remapVoxelsToGraph(self,key, verbose=False):
         """take the pool of points stored in self.reMap and map them to edges
         in the graph"""
-        remapVoxelsToGraph(self.orderedGraphs[key],self.reMap,verbose=False)
+        remapVoxelsToGraph(self.orderedGraphs[key],self.reMap,self.pool,verbose=False)
         
     def mapVoxelsToGraph(self, points_toMap, key, mp_key="mappedPoints",worldCoordinates=False, verbose=False):
         """maps each voxel specified in points_toMap to a particular graph edge.
@@ -456,7 +456,7 @@ class SkeletonGraph(object):
         if worldCoordiantes=False and are converted to world coordinates (x,y,z)
         prior to mapping. If worldCoordiantes=True the data are assumed to be a """
         cg = self.orderedGraphs[key]
-        mapVoxelsToGraph(cg,points_toMap, mp_key=mp_key,
+        mapVoxelsToGraph(cg,points_toMap, self.pool, mp_key=mp_key,
                 worldCoordinates=worldCoordinates,
                 origin=self.origin,
                 spacing=self.spacing,
@@ -467,7 +467,7 @@ class SkeletonGraph(object):
         """takes the mapped points associated with each edge and maps them
         to the orthogonal planes associated with specific points on the fitted
         path"""
-        mapPointsToPlanes(self.orderedGraphs[key],verbose=verbose)
+        mapPointsToPlanes(self.orderedGraphs[key],self.pool,verbose=verbose)
 
 # Utility FUNCTIONS
 def reverseEdgeAttributes(edgeData):
@@ -698,7 +698,7 @@ def fitEdge(og,e,VERBOSE=False):
         og[e[0]][e[1]]['d0'] = None
         og[e[0]][e[1]]['d1'] = None
         og[e[0]][e[1]]['d2'] = None
-def mapPointsToPlanes(og, verbose=False):
+def mapPointsToPlanes(og, pool, verbose=False):
     """takes the mapped points associated with each edge and maps them
     to the orthogonal planes associated with specific points on the fitted
     path"""
@@ -727,7 +727,7 @@ def mapPointsToPlanes(og, verbose=False):
         except KeyError, error:
             if( verbose ): print "failed to map to plane with  error", error
             pass
-def remapVoxelsToGraph(og, reMap, verbose=True):
+def remapVoxelsToGraph(og, reMap, pool, verbose=True):
     """take the pool of points stored in self.reMap and map them to edges
     in the graph"""
     if( verbose ):
@@ -744,7 +744,7 @@ def remapVoxelsToGraph(og, reMap, verbose=True):
     if( verbose ): print points_toMap.shape
     mapVoxelsToGraph(og, points_toMap,worldCoordinates=True, verbose=False)
     reMap = []
-def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
+def mapVoxelsToGraph(cg, points_toMap, pool, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
     """maps each voxel specified in points_toMap to a particular graph edge.
     points_toMap  is assumed to be a Nx3 array of image coordinates (i,j,k)
     if worldCoordiantes=False and are converted to world coordinates (x,y,z)
@@ -789,7 +789,7 @@ def mapVoxelsToGraph(cg, points_toMap, mp_key="mappedPoints",worldCoordinates=Fa
                 pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
     for e in mdata.keys():
         cg[e[0]][e[1]][mp_key].shape
-def defineOrthogonalPlanes(og):
+def defineOrthogonalPlanes(og,pool):
     edges = og.edges(data=True)
     for e in edges:
         if( e[2].has_key('d0') ):
