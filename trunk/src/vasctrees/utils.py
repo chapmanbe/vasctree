@@ -1,7 +1,16 @@
-"""A set of utilities common to multiple vasctree scripts and packages"""
+"""**vasctrees.utils**: A set of utilities common to multiple vasctree scripts and packages
+
+Defined functions include:
+* getOrderedGraphKeys
+* readGraphs
+* writeGraphs
+"""
 import gzip
 import cPickle
 def getOrderedGraphKeys(ogs):
+    """
+    This is a utility function to list the keys of a graph dictionary and prompt the user to select a particular graph from the dictionary
+    """
     keys = ogs.keys()
     txt = "Select number of desired key:\n"
     for i in range(len(keys)):
@@ -15,6 +24,8 @@ def getOrderedGraphKeys(ogs):
             pass
     return None
 def readGraphs(fname):
+    """
+
     try:
         fo = gzip.open(fname,"rb")
         data = cPickle.load(fo)

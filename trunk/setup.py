@@ -1,5 +1,3 @@
-import ez_setup
-ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 setup(name='vasctree',
       version='0.1.8.7',
@@ -9,7 +7,7 @@ setup(name='vasctree',
       #py_modules = pyn,
       packages=find_packages('src'),
       package_dir={'':'src'},
-      install_requires = ['python>=2.6','numpy>=1.3','networkx'],
+      install_requires = ['python>=2.6','numpy>=1.3','networkx','cython'],
       scripts = ['src/vasctrees/scripts/getPHSkel2.py',
                  'src/vasctrees/scripts/getPHSkel3.py',
                  'src/vasctrees/scripts/getPHSkel4.py',
