@@ -1,9 +1,13 @@
 """**vasctrees.utils**: A set of utilities common to multiple vasctree scripts and packages
 
 Defined functions include:
-* getOrderedGraphKeys
-* readGraphs
-* writeGraphs
+
++ getOrderedGraphKeys
+
++ readGraphs
+
++ writeGraphs
+
 """
 import gzip
 import cPickle
@@ -25,7 +29,14 @@ def getOrderedGraphKeys(ogs):
     return None
 def readGraphs(fname):
     """
+    reads a pickled SkeletonGraph file. Initially tries to read it in assuming in has
+    been compressed with gzip. If this fails then it proceeds to try to read the Pickle archives as a normal file.
 
+    **Arguments:**
+    *fname*: filename to read graphs from
+
+
+    """
     try:
         fo = gzip.open(fname,"rb")
         data = cPickle.load(fo)
@@ -36,6 +47,15 @@ def readGraphs(fname):
         fo.close()
     return data
 def writeGraphs(data,fname):
+    """
+    writes a pickled SkeletonGraph file to a gzipped file.
+
+    **Arguments:**
+
+    *data*: the dictionary of SkeletonGraph data
+    *fname*: the file name to write to
+    """
+
     fo = gzip.open(fname,"wb")
     cPickle.dump(data,fo)
     fo.close()
