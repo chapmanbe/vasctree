@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 setup(name='vasctree',
-      version='0.1.8.7',
+      version='0.1.8.8',
       description='Python Vascular Tree',
       author='Brian Chapman and Holly Berty',
       author_email='brian.chapman@utah.edu',
@@ -17,5 +17,6 @@ setup(name='vasctree',
                  'src/vasctrees/scripts/viewGraphs.py',
                  'src/vasctrees/scripts/smoothSeg2.py',
                  'src/vasctrees/scripts/reviewGraphs.py',
+                 'src/vasctrees/scripts/viewGraphVTK.py',
                  'src/vasctrees/scripts/grabVolumes.py',],
      )

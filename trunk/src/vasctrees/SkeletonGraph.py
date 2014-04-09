@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# Need to select license to use
+# Need to select license to USE
+"""
+This module contains the definition class and functions for generating, editing and analyzing tree structures"""
 import networkx as nx
 import numpy as np
 import cPickle

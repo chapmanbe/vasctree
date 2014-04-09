@@ -1,4 +1,4 @@
-"""**vasctrees.utils**: A set of utilities common to multiple vasctree scripts and packages
+"""vasctrees.utils: A set of utilities common to multiple vasctree scripts and packages
 
 Defined functions include:
 
@@ -28,13 +28,23 @@ def getOrderedGraphKeys(ogs):
             pass
     return None
 def readGraphs(fname):
-    """
-    reads a pickled SkeletonGraph file. Initially tries to read it in assuming in has
-    been compressed with gzip. If this fails then it proceeds to try to read the Pickle archives as a normal file.
-
-    **Arguments:**
-    *fname*: filename to read graphs from
-
+    """Fetches graph data from file.
+    
+    Returns a SkeletonGraph data dictionary from a file. It first tries to
+    read the file as a gzipped file. If this fails it tries to read it as a
+    normal pickle file stored in a binary format.
+    
+    Args:
+        fname: The file to read from
+        
+    Returns:
+        A dict of the SkeletonGraph data. key/value pairs are as follows:
+            'imgShape'/the tuple of the numpy array shape that the graphs 
+                       were generated from
+            'skelGraphs':dictionary of unordered graphs generated from the 
+                         skeleton image. Graphs are ordered by object size.
+            'orderedGraphs': dictionary of ordered graphs created by the user.
+            'roots': dictionary of roots associated with each ordered graph.
 
     """
     try:
