@@ -1,0 +1,16 @@
+syntax: glob
+
+*.pyc
+*.swp
+*.png
+*.pdf
+*.o
+*.so
+*.gif
+*.egg
+*.tar
+*.tgz
+
+build/*
+dist/*
+docs/*
