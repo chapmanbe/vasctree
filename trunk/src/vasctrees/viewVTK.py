@@ -196,10 +196,10 @@ class GraphViewer(object):
         self.figure.scene.disable_render = False
         mlab.view(0, 180, 400, roll=180)
 
-        saveFileName = os.path.join(os.path.expanduser("~"), "desktop", self.title + ".png")
-        mlab.savefig(saveFileName)
-        mlab.close()
-        # mlab.show()
+        #saveFileName = os.path.join(os.path.expanduser("~"), "desktop", self.title + ".png")
+        #mlab.savefig(saveFileName)
+        #mlab.close()
+        mlab.show()
 
         # arr = mlab.screenshot()
         # print arr
