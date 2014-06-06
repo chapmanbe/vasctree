@@ -70,7 +70,7 @@ class GraphViewer(object):
         # mlab.clf()
         self.figure.scene.disable_render = True
         self.crds = {}
-        print self.root_wcrd, self.root
+        print "root information:",self.root_wcrd, self.root
 
         # create drawables for bifurcations and endpoints
         self.narray = np.zeros((len(self.nodes), 3), dtype=np.float32)
@@ -112,7 +112,7 @@ class GraphViewer(object):
                 clr = mapping[(e[0], e[1])]
                 # clr_t = clr, clr, clr
                 s = np.concatenate((s, np.linspace(clr, clr, len(mp[::1, 0]))))
-                print clr
+                #print "%s->%s mapping=%s"%(e[0],e[1],clr)
                 if surface is None:
                     surface = e[2]['mappedPoints']
                 else:
@@ -134,10 +134,6 @@ class GraphViewer(object):
             except IndexError, error:
                 print "IndexError", error
 
-        print x.shape
-        print y.shape
-        print z.shape
-        print s.shape
         self.surfaces = mlab.points3d(x, y, z, s,
                                       # colormap="Greys",
                                       colormap="jet",
