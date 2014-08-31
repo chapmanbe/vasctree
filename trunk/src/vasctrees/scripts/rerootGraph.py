@@ -6,6 +6,12 @@ import vasctrees.viewGraph as viewGraph
 import vasctrees.SkeletonGraph as sg
 import vasctrees.utils as utils
 import argparse
+def getGraph(d,i,label="og_rms"):
+    try:
+        key = (i,label)
+        return d[key],key
+    except:
+        return getGraph(d,i+1,label=label)
 
 def rerootGraph(graph,newRoot):
     og = graph.copy()
@@ -49,6 +55,7 @@ def getParser():
         parser.add_argument("--number",dest="graphNumber",default=1,type=int)
         parser.add_argument("--rms",action='store_true', dest='do_rms',
                 default=False)
+        parser.add_argument("--set_label",dest='root_label', default=[],nargs=3)
 
         return parser
     except Exception, error:
@@ -65,11 +72,15 @@ def main():
     if( not ogs.has_key(key) ):
         key = utils.getOrderedGraphKeys(data['orderedGraphs'])
 
+    if options.root_label:
+        graph,key = getGraph(data['orderedGraphs'],1,label=options.graphLabel)
+
     print "procesing graph with key",key
     num = key[0]
     label = key[1]
 
     graph = data['orderedGraphs'][key]
+
     if( options.do_medianx):
 
         endp = [n for n in graph.nodes() if graph.degree(n)==1]

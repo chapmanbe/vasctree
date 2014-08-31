@@ -106,12 +106,12 @@ class GraphViewer(object):
         for e in self.edges:
             try:
                 mp = e[2]["mappedPoints"]
-                x = np.concatenate((x, mp[::1, 0]))
-                y = np.concatenate((y, mp[::1, 1]))
-                z = np.concatenate((z, mp[::1, 2]))
+                x = np.concatenate((x, mp[::4, 0]))
+                y = np.concatenate((y, mp[::4, 1]))
+                z = np.concatenate((z, mp[::4, 2]))
                 clr = mapping[(e[0], e[1])]
                 # clr_t = clr, clr, clr
-                s = np.concatenate((s, np.linspace(clr, clr, len(mp[::1, 0]))))
+                s = np.concatenate((s, np.linspace(clr, clr, len(mp[::4, 0]))))
                 #print "%s->%s mapping=%s"%(e[0],e[1],clr)
                 if surface is None:
                     surface = e[2]['mappedPoints']
