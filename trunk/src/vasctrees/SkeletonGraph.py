@@ -744,7 +744,7 @@ def remapVoxelsToGraph(og, reMap, pool, verbose=True):
             if( verbose ): print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
             #raw_input('continue')
     if( verbose ): print points_toMap.shape
-    mapVoxelsToGraph(og, points_toMap,worldCoordinates=True, verbose=False)
+    mapVoxelsToGraph(og, points_toMap,pool, worldCoordinates=True, verbose=False)
     reMap = []
 def mapVoxelsToGraph(cg, points_toMap, pool, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
     """maps each voxel specified in points_toMap to a particular graph edge.
