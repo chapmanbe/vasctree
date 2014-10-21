@@ -7,6 +7,7 @@ import matplotlib as mpl_connect
 import matplotlib.colors as colors
 import matplotlib.pyplot as pp
 import numpy as np
+import networkx as nx
 def get3DPlotUndirected(fig, og,
         verbose=True, degree = None):
               
@@ -155,6 +156,75 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4,
     ax.w_yaxis.set_major_locator(LinearLocator(3))
     return ax
 
+def get3DPlotAnatomy(fig, og,labelNodes=False, alpha=0.05,subsample=4, 
+              verbose=True, degree = None, showSurface=True, 
+              showMidPlane=True, root=None):
+    ax = Axes3D(fig)
+    edges = og.edges(data=True)
+    nodes = og.nodes(data=True)
+    narray = np.zeros((len(nodes),3),np.float32)  
+    axes = ax.get_axes()
+    axes.set_axis_off()
+    ax.set_axes(axes)
+    
+    for i in range(len(nodes)):
+        narray[i,:] = nodes[i][1]['wcrd']
+        dg = og.degree(nodes[i][0])
+        if( labelNodes and (degree == None or dg == degree)):
+            ax.text(narray[i,0],narray[i,1],narray[i,2],"(%d,%d,%d)"%(nodes[i][0][0],nodes[i][0][1],nodes[i][0][2]))
+    print "root is",root
+    if( root ):
+        rcrd = og.node[root]["wcrd"]
+        ax.text(rcrd[0],rcrd[1],root[2],"Root")        
+    colors = ['r','g','b','y','m','c']
+    counter = 0
+    ss = 4
+    for e in edges:
+        try:
+            sp = e[2]['d0']
+            mps = e[2]['mappedPoints']
+            edgeDepth = nx.shortest_path_length(og,root,e[1])
+            if edgeDepth == 1:
+                clr = 'r'
+            elif edgeDepth == 2:
+                clr = 'g'
+            else:
+                clr = 'b'
+            ax.plot(sp[0],sp[1],sp[2],color = clr)
+            if( showSurface):
+                try:
+                    ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
+                except Exception, error:
+                    print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)
+            if( showMidPlane ):
+                try:
+                    planePoints = e[2]['planePoints']
+                    midpoint = len(planePoints.keys())/2
+                    mps = np.array(e[2]['planePoints'][midpoint])
+
+                    ax.scatter(mps[:,0],mps[:,1],mps[:,2],color = clr,marker='+',alpha=0.5)
+                except Exception, error:
+                    print "couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)
+
+            counter += 1
+        except KeyError:
+            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+        except TypeError:
+            if( e[2]['d0'] == None ):
+                print "No fitted data for edge (%s,%s)"%(e[0],e[1])
+            
+    ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
+    ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
+        
+    
+    
+    ax.w_zaxis.set_major_locator(LinearLocator(3))
+    ax.w_xaxis.set_major_locator(LinearLocator(3))
+    ax.w_yaxis.set_major_locator(LinearLocator(3))
+    return ax
+
 def onclick(event):
     print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
         event.button, event.x, event.y, event.xdata, event.ydata)
@@ -209,6 +279,23 @@ def viewGraphWithMapping(og, mapping, fignum=1,  alpha=0.05,subsample=4,
         fig1.savefig(fileName+".mapping.png")
     if( view ):
         pp.show()
+
+def viewGraph0(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
+        degree = None, showSurface=True, root=None, fileName = None, view=True,theta=100,phi= 120):
+    """view an ordered graph generated using the SkeltonGraph class"""
+    print "generating surface view"
+    fig1 = pp.figure(fignum)
+    ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,
+                    verbose=verbose,degree=degree,
+                    showSurface=showSurface,showMidPlane=False,root=root)
+    ax1.view_init(theta,phi)
+    print "generating edge only view"
+    if( fileName ):
+        fig1.savefig(fileName+".fig1.png")
+    if( view ):
+        pp.show()
+
+    pp.close(fig1)
 
 def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, 
         degree = None, showSurface=True, showMidPlane=True,root=None, fileName = None, view=True,theta=100,phi= 120):
