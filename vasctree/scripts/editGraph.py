@@ -41,7 +41,7 @@ class GraphViewer(object):
         self.sg = SkeletonGraph()
         self.sg.orderedGraphs = self.data['orderedGraphs']
         self.sg.roots = self.data['roots']
-        if(not self.sg.orderedGraphs[self.key].graph.has_key("root")):
+        if("root" not in self.sg.orderedGraphs[self.key].graph):
             self.sg.orderedGraphs[self.key].graph["root"] = self.sg.roots[self.key]
 
         #self.picker = self.figure.scene.get()['picker']
@@ -57,7 +57,7 @@ class GraphViewer(object):
         self.deleteNode = None
     
     def saveModifiedData(self):
-        print "saving modified data"
+        print("saving modified data")
         self.data['orderedGraphs'] = self.sg.orderedGraphs
         #f = file(self.fname,"wb")
         writeGraphs(self.data,self.fname)
@@ -131,26 +131,26 @@ class GraphViewer(object):
                 pts = 0
                 if( sp ):
                     self.lines[(e[0],e[1])] = mlab.plot3d(sp[0],sp[1],sp[2],color=clr, tube_radius=1.0)
-            except KeyError, error:
-                print "KeyError", error
-            except IndexError, error:
-                print "IndexError", error
+            except KeyError as error:
+                print("KeyError", error)
+            except IndexError as error:
+                print("IndexError", error)
         #mlab.view(47, 57, 8.2, (0.1, 0.15, 0.14))
         self.figure.scene.disable_render = False
-        print "ready for editing"
+        print("ready for editing")
         mlab.show()
 
     def picker_callback(self, pckr):
         # currently this callback gets disconnected when I clear the figure
         # so I am compensating by creating a new figure to draw on with each call
-        print "in picker_callback3"
+        print("in picker_callback3")
         delta = 2
-        surfaceKeys = self.surfaces.keys()
+        surfaceKeys = list(self.surfaces.keys())
         for sk in surfaceKeys:
             try:
                 if( pckr.actor in self.surfaces[sk].actor.actors ):
-                    print "we picked a surface"
-                    print sk
+                    print("we picked a surface")
+                    print(sk)
                     newNode = sk[1]
                     if( self.sg.orderedGraphs[self.key].degree(newNode) == 1 ):
                         if( self.deleteNode == newNode):
@@ -173,7 +173,7 @@ class GraphViewer(object):
                                               wcrd[1]-delta, wcrd[1]+delta, 
                                               wcrd[2]-delta, wcrd[2]+delta)    
                     else:
-                        print "This is not a degree 1 node. Degree = %s"%self.sg.orderedGraphs[self.key].degree(newNode)
+                        print("This is not a degree 1 node. Degree = %s"%self.sg.orderedGraphs[self.key].degree(newNode))
             except KeyError:
                 pass
                 # Getting strange key error on redrawing figure after editing.
@@ -181,13 +181,13 @@ class GraphViewer(object):
 
 
 def getOrderedGraphKeys(ogs):
-    keys = ogs.keys()
+    keys = list(ogs.keys())
     txt = "Select number of desired key:\n"
     for i in range(len(keys)):
         txt += """%d\t\t%s\n"""%(i,keys[i])
     while(True):
         try:
-            keyNum = input(txt)
+            keyNum = eval(input(txt))
             if( 0 <= keyNum and keyNum < len(keys) ):
                 return keys[keyNum]
         except:
@@ -203,8 +203,8 @@ def getParser():
         parser.add_argument("-e","--edit_label",dest="edit_suffix",default="_edited")
 
         return parser
-    except Exception, error:
-        print "failed in getParser", error  
+    except Exception as error:
+        print("failed in getParser", error)  
         sys.exit(0)               
         
 if __name__ == '__main__':

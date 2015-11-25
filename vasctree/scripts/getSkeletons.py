@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 
 def fillHoles(fname):
-    print "filling in",fname
+    print("filling in",fname)
     reader = itk.ImageFileReader.IUC3.New(FileName=fname)
     filler = itk.VotingBinaryIterativeHoleFillingImageFilter.IUC3.New()
     filler.SetInput(reader.GetOutput())
@@ -19,7 +19,7 @@ def fillHoles(fname):
     
     writer.SetInput(filler.GetOutput())
     writer.Update()
-    print "saved filled file",outFill
+    print("saved filled file",outFill)
     return outFill
 def getParser():
     try:
@@ -28,8 +28,8 @@ def getParser():
         parser.add_option("-n", "--numIter", dest="iterations",type="int",default=10)
 
         return parser
-    except Exception,  error:
-        print "failed to generate parser",  error
+    except Exception as  error:
+        print("failed to generate parser",  error)
         
 
 def main():
@@ -38,21 +38,21 @@ def main():
         (options, args) = parser.parse_args()
         files = glob.glob(options.filename+".gz")
         for file in files:
-            print "Current file",file
+            print("Current file",file)
             ofile = os.path.splitext(file)[0]
-            print "processing original file",ofile
+            print("processing original file",ofile)
             subprocess.call("gunzip %s"%file,shell=True)
             ffile = fillHoles(ofile)
             tmp2 = os.path.splitext(ffile)
             outSkel = tmp2[0]+"_skel.mha"
     
             subprocess.call("BinaryThinning3D %s %s"%(ffile,outSkel),shell=True)
-            print "compressing files",ofile,outSkel
+            print("compressing files",ofile,outSkel)
             subprocess.call("gzip %s %s %s"%(ofile,outSkel,ffile),shell=True)
 
-    except Exception, error:
-        print "failed in getSkeletons due to error:",error
-        print options.filename, outSkel
+    except Exception as error:
+        print("failed in getSkeletons due to error:",error)
+        print(options.filename, outSkel)
 
 if __name__ == '__main__':
     main()

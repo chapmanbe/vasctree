@@ -50,31 +50,31 @@ class testClass:
         t1_start = time.time()
         self.vx.traceBackPaths1()
         t1_stop = time.time()
-        print "time for algorithm4:",t4_stop-t4_start
-        print "time for algorithm2:",t2_stop-t2_start
-        print "time for algorithm1:",t1_stop-t1_start    
+        print("time for algorithm4:",t4_stop-t4_start)
+        print("time for algorithm2:",t2_stop-t2_start)
+        print("time for algorithm1:",t1_stop-t1_start)    
 
     def test_SegGraph(self):
         self.vx.getEndPointPaths()
-        print "trace back paths"
+        print("trace back paths")
         self.vx.traceBackPaths5()
-        print "plot paths"
+        print("plot paths")
         self.vx.showPaths(self.vx.getSGPaths(),label="Orthogonal MIP Images with Centerlines-SG")
-        raw_input('continue')
+        input('continue')
 
     def test_mipEndPoints(self):
         self.vx.getEndPointPaths()
-        print "trace back paths"
+        print("trace back paths")
         self.vx.traceBackPaths4()
-        print "prune paths"
+        print("prune paths")
         self.vx.pruneSplitPaths()
-        print "plot paths"
-        self.vx.showPaths(self.vx.paths.values())
-        raw_input('continue')
+        print("plot paths")
+        self.vx.showPaths(list(self.vx.paths.values()))
+        input('continue')
         self.vx.showPaths(self.vx.splitPaths,label="Orthogonal MIP Images with Centerlines")
-        raw_input('continue')
+        input('continue')
         self.vx.plotPaths(self.vx.splitPaths,label="firstPlot",show=True)
-        raw_input('continue')
+        input('continue')
     
     def test_nxvasc(self):
         """Uses sets for determining bifurcation points"""
@@ -82,7 +82,7 @@ class testClass:
         self.vx.traceBackPaths()
         self.vx.pruneSplitPaths()
         self.vx.plotPaths(label="firstPlot",show=True)
-        print "FINISHED"
+        print("FINISHED")
 
     def createPhantom1(self):
         self.mask = na.zeros((16,32,32),na.uint16)

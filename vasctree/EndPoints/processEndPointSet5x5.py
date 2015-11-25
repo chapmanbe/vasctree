@@ -7,28 +7,28 @@ to be sure they are all rotationally invariant"""
 
 from sliceOrientation import OrientMask
 import sys
-import cPickle
+import pickle
 import numpy as na
 
 def main():
     fle=open("Configuration5x5.pckle",'rb') #Contains a list of 2
-    data = cPickle.load(fle)
+    data = pickle.load(fle)
     output=open("OrientedEndpoints5x5.pckle",  'wb')
     modifiedEp = []
     """The original code used barring any exceptions"""
-    print "%d endpoints"%len(data[0])
+    print("%d endpoints"%len(data[0]))
     count =0
     for ep in data[0]:
         count +=1
         if len(ep)<5:
-            print count
+            print(count)
             pass
         else:
             om = OrientMask(ep)
             om.orient()
             modifiedEp.append(om.mask) 
-        print len(modifiedEp)
-    cPickle.dump(modifiedEp , output)
+        print(len(modifiedEp))
+    pickle.dump(modifiedEp , output)
 
 if __name__ == '__main__':
     main()

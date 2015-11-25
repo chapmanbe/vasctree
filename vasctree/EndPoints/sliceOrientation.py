@@ -2,7 +2,7 @@ import os
 import sys
 #sys.path.append('../../vasctrees')
 #import vasctrees.nxvasc as nxvasc
-import cPickle
+import pickle
 import numpy as na
 import scipy.ndimage as ndi
 import math

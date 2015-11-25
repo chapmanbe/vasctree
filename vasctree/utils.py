@@ -10,18 +10,18 @@ Defined functions include:
 
 """
 import gzip
-import cPickle
+import pickle
 def getOrderedGraphKeys(ogs):
     """
     This is a utility function to list the keys of a graph dictionary and prompt the user to select a particular graph from the dictionary
     """
-    keys = ogs.keys()
+    keys = list(ogs.keys())
     txt = "Select number of desired key:\n"
     for i in range(len(keys)):
         txt += """%d\t\t%s\n"""%(i,keys[i])
     while(True):
         try:
-            keyNum = input(txt)
+            keyNum = eval(input(txt))
             if( 0 <= keyNum and keyNum < len(keys) ):
                 return keys[keyNum]
         except:
@@ -49,11 +49,11 @@ def readGraphs(fname):
     """
     try:
         fo = gzip.open(fname,"rb")
-        data = cPickle.load(fo)
+        data = pickle.load(fo)
         fo.close()
     except:
         fo = file(fname,"rb")
-        data = cPickle.load(fo)
+        data = pickle.load(fo)
         fo.close()
     return data
 def writeGraphs(data,fname):
@@ -67,6 +67,6 @@ def writeGraphs(data,fname):
     """
 
     fo = gzip.open(fname,"wb")
-    cPickle.dump(data,fo)
+    pickle.dump(data,fo)
     fo.close()
 

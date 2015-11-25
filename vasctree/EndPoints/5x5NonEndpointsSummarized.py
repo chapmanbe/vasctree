@@ -3,7 +3,7 @@
 """This purpose of this code is to summarize all of the img#Points5x5.pckle
 the output of the 5x5neighbors into 1 file"""
 import sys
-import cPickle
+import pickle
 import numpy as na
 sys.path.append("../../../../../../Desktop/5x5NonEndpointSummaryFiles")
 def main():
@@ -21,14 +21,14 @@ def main():
     count=0
     for f in files:
         f1=open(f)
-        f2=cPickle.load(f1)
-        print f2[2, 2, 2]
+        f2=pickle.load(f1)
+        print(f2[2, 2, 2])
         count += f2[2, 2, 2]
         Sum.append(f2)
     start=Sum[0]
     for s in Sum[1:]:
         start +=s
-    print "total number of points is %d"%count
-    cPickle.dump(start,  output)
+    print("total number of points is %d"%count)
+    pickle.dump(start,  output)
 if __name__=='__main__':
     main()

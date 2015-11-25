@@ -67,9 +67,9 @@ def test_nxvasc1():
     t1_start = time.time()
     vx.traceBackPaths1()
     t1_stop = time.time()
-    print "time for algorithm4:",t4_stop-t4_start
-    print "time for algorithm2:",t2_stop-t2_start
-    print "time for algorithm1:",t1_stop-t1_start
+    print("time for algorithm4:",t4_stop-t4_start)
+    print("time for algorithm2:",t2_stop-t2_start)
+    print("time for algorithm1:",t1_stop-t1_start)
 def test_critEnds():
     import nxvasc
     import dicom
@@ -94,11 +94,11 @@ def test_critEnds():
     vx.fillFigureOfMerit()
     vx.createNXGraph(verbose=True)
     vx.getEndPointPaths()
-    print "trace back paths"
+    print("trace back paths")
     vx.traceBackPaths5()
-    print "plot paths"
+    print("plot paths")
     vx.showPaths(vx.getSGPaths(),label="Orthogonal MIP Images with Centerlines-SG")
-    raw_input('continue')
+    input('continue')
 def test_SegGraph():
     import nxvasc
     import dicom
@@ -124,11 +124,11 @@ def test_SegGraph():
     vx.fillFigureOfMerit()
     vx.createNXGraph(verbose=True)
     vx.getEndPointPaths()
-    print "trace back paths"
+    print("trace back paths")
     vx.traceBackPaths5()
-    print "plot paths"
+    print("plot paths")
     vx.showPaths(vx.getSGPaths(),label="Orthogonal MIP Images with Centerlines-SG")
-    raw_input('continue')
+    input('continue')
 
 def test_mipEndPoints():
     import nxvasc
@@ -153,17 +153,17 @@ def test_mipEndPoints():
     vx.fillFigureOfMerit()
     vx.createNXGraph(verbose=True)
     vx.getEndPointPaths()
-    print "trace back paths"
+    print("trace back paths")
     vx.traceBackPaths4()
-    print "prune paths"
+    print("prune paths")
     vx.pruneSplitPaths()
-    print "plot paths"
-    vx.showPaths(vx.paths.values())
-    raw_input('continue')
+    print("plot paths")
+    vx.showPaths(list(vx.paths.values()))
+    input('continue')
     vx.showPaths(vx.splitPaths,label="Orthogonal MIP Images with Centerlines")
-    raw_input('continue')
+    input('continue')
     vx.plotPaths(vx.splitPaths,label="firstPlot",show=True)
-    raw_input('continue')
+    input('continue')
 def test_nxvasc():
     """Uses sets for determining biforcation points"""
     import nxvasc
@@ -183,7 +183,7 @@ def test_nxvasc():
     vx.traceBackPaths()
     vx.pruneSplitPaths()
     vx.plotPaths(label="firstPlot",show=True)
-    print "FINISHED"
+    print("FINISHED")
     #Tree = v.traceBackGraph()
     #assert vx.splitPaths
 def test_vasc():

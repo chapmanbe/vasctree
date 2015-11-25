@@ -18,22 +18,22 @@ def main():
     writer = itk.ImageFileWriter.IUC3.New()
     writer.SetInput(filler.GetOutput())
     writer.SetFileName(outFill)
-    print "filling in holes in segmentation"
+    print("filling in holes in segmentation")
     writer.Update()
     subprocess.call("BinaryThinning3D %s %s"%(outFill,outSkel),shell=True)
     img = io.readImage(outSkel,returnITK=False,imgMode = "uchar")
     sg = SkeletonGraph(img)
-    print "generating graph from skeleton"
+    print("generating graph from skeleton")
     sg.getGraphFromSkeleton()
     for i in range(len(sg.graphs)):
-        print "processing graph %d"%i
+        print("processing graph %d"%i)
         sg.setCurrentNumber(i)
         sg.setCurrentGraph()
         sg.findEndpointsBifurcations()
     fo = open(pfile,'rb')
     origins = cPickle.load(fo)
     sg.setRoots(origins)
-    print "ordering graphs"
+    print("ordering graphs")
     for i in range(len(sg.graphs)):  
         sg.setCurrentNumber(i)
         sg.traceEndpoints()       

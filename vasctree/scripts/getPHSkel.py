@@ -14,7 +14,7 @@ def main():
 #sg.setOriginalImage(fname=sys.argv[2])
     sg.getGraphsFromSkeleton(verbose=False)
     sg.setLargestGraphToCurrentGraph()
-    sg.graphs.keys()
+    list(sg.graphs.keys())
     sg.findEndpointsBifurcations()
     root = sg.selectSeedFromDFE()
 #sg.viewGraph()

@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.append("../")
 import nxvasc
-import cPickle
+import pickle
 import numpy as na
 import array
 import scipy
@@ -35,9 +35,9 @@ that point as the new endpoint"""
     return BestI, minNeighbors     
 
 endpoints=open('f0MipEndpoints.pckle','rb')
-crds=cPickle.load(endpoints)
+crds=pickle.load(endpoints)
 length=len(crds)
-print 'length',  length #gives number of endpoints labeled
+print('length',  length) #gives number of endpoints labeled
 #img = io.readImage(str(sys.argv[2]),returnITK=False,imgMode="uchar")
 img = io.readImage('PE00026Filter0_seg.mha',returnITK=False,imgMode="uchar")
 mask = na.where(img>0,1,0) 
@@ -53,9 +53,9 @@ point.get5x5matrix() #need to define self.d26 for getNeighbors, defines
 #relationship between the neighbors
 count=0 #keep track of the number of replacements to be made
 for ic in range(len(ind)):
-    print "ic",  ic 
+    print("ic",  ic) 
     i=ind[ic] #i is the index at the icth location
-    print "i",  i # check
+    print("i",  i) # check
     #maskNeighbors stores the crds of all pts. w/in the neighbors
     #of i that lie within the mask.
     maskNeighbors=point.getValidNeighborsInformation(i) 
@@ -66,8 +66,8 @@ for ic in range(len(ind)):
         #replace the original pt. with the new pt.
         crds[ic][0] =  p[0] ; crds[ic][1] = p[1]; crds[ic][2]=p[2] 
         count +=1 #increase count by 1, made a replacement
-        print "replaced %d (%d) with %d (%d)"%(i,len(maskNeighbors[0]),ind[ic],newi[1])
-cPickle.dump(crds,fle) #output the new crds into a new file
+        print("replaced %d (%d) with %d (%d)"%(i,len(maskNeighbors[0]),ind[ic],newi[1]))
+pickle.dump(crds,fle) #output the new crds into a new file
 
 
 

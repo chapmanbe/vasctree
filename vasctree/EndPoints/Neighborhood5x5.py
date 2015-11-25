@@ -3,7 +3,7 @@ import sys
 #import vasctrees.nxvasc as nxvasc
 sys.path.append('../')
 import nxvasc
-import cPickle
+import pickle
 import numpy as na
 import scipy
 import math
@@ -43,8 +43,8 @@ class Neighborhood5x5(object):
             a = na.reshape(na.array(a),(372,1))
 #            print len(self.d124)
             self.d124 = na.concatenate((self.d124,a),axis=1)
-        except Exception, error:
-            print "failed in get5x5matrix(): ", error
+        except Exception as error:
+            print("failed in get5x5matrix(): ", error)
     
     def setMask(self, mask):
         """Set the mask using the numpy image mask. In addition to reading the
@@ -57,18 +57,18 @@ class Neighborhood5x5(object):
             self.dim = self.mask.shape[::-1]
             #print self.mask.shape
             return True
-        except Exception, error:
-            print "failed in setMask", error    
+        except Exception as error:
+            print("failed in setMask", error)    
     
     def createMaskDictionary(self):
         """Create dictionary that maps the index into the 3D volume to an index into the mask
     The 1D array into the 3D volume is the key of the dictionary.
     The ordinal position of the index is the value """
         try:
-            self.maskMap = dict(zip(self.inds,range(len(self.inds))))
+            self.maskMap = dict(list(zip(self.inds,list(range(len(self.inds))))))
             self.maskSet = set(self.inds)
-        except Exception, error:
-            print "failed in createMaskDictionary", error
+        except Exception as error:
+            print("failed in createMaskDictionary", error)
             
     def getInds(self,crds):
         """given the x,y,z coordinates return the corresponding 1D index
@@ -91,8 +91,8 @@ class Neighborhood5x5(object):
             nxny = self.dim[0]*self.dim[1]
             crd = na.transpose(na.array([ (ind % nx), (ind / nx)%ny,ind / nxny]))
             return crd
-        except Exception, error:
-            print "failed in get_crds ", error
+        except Exception as error:
+            print("failed in get_crds ", error)
             return -1
     def getValidNeighborsInformation(self, index, distances = False,coordinates=False,figuresOfMerit=False ):
         """ get the coordinates of all points within the 26-point neighborhood
@@ -133,8 +133,8 @@ class Neighborhood5x5(object):
 
             indc = [self.maskMap[i] for i in inds]
             return indc
-        except Exception, error:
-            print "failed in getValidNeighborsInformation() ", error
+        except Exception as error:
+            print("failed in getValidNeighborsInformation() ", error)
 
     def get_ind(self,*q):
         """given the x,y,z coordinates return the corresponding 1D index
@@ -159,8 +159,8 @@ class Neighborhood5x5(object):
                 cz = int(z+0.5)
             ind = cx + cy*self.dim[0]+cz*self.dim[0]*self.dim[1]
             return ind
-        except Exception, error:
-            print error
+        except Exception as error:
+            print(error)
             return None        
     def getValidIndicies(self, points):
         """...
@@ -170,6 +170,6 @@ class Neighborhood5x5(object):
         try:
             inds = [ i for i in range(points.size) if points.flat[i] in self.maskSet ]
             return inds
-        except Exception, error:
-            print "failed in getValidIndicies", error
+        except Exception as error:
+            print("failed in getValidIndicies", error)
             return -1

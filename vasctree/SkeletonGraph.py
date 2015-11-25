@@ -4,8 +4,8 @@
 This module contains the definition class and functions for generating, editing and analyzing tree structures"""
 import networkx as nx
 import numpy as np
-import cPickle
-import cmvtg
+import pickle
+from . import cmvtg
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import math
@@ -77,12 +77,12 @@ class SkeletonGraph(object):
         self.cg = self.graphs[self.currentGraphKey]
     def getLargestOrderedGraphKey(self):
         """Return the key associated with the largest ordered graph"""
-        keys = self.orderedGraphs.keys()
+        keys = list(self.orderedGraphs.keys())
         szs = np.array([self.orderedGraphs[k].number_of_nodes() for k in keys ])
         ind = np.argmax(szs)
         return keys[ind]
     def setLargestGraphToCurrentGraph(self):
-        keys = self.graphs.keys()
+        keys = list(self.graphs.keys())
         szs = np.array([self.graphs[k].number_of_nodes() for k in keys ])
         ind = np.argmax(szs)
         self.setCurrentGraph(keys[ind])
@@ -91,14 +91,14 @@ class SkeletonGraph(object):
         a graph is generated consisting of that points neighbors"""
         sz = self.img.shape
         if( verbose ):
-            print "labeling skeleton image"
+            print("labeling skeleton image")
         lmask = ndi.label(self.img,structure=np.ones((3,3,3)))
         if( verbose ):
-            print "found %d distinct object(s) in skeleton"%lmask[1]
+            print("found %d distinct object(s) in skeleton"%lmask[1])
         for i in range(1,lmask[1]+1):
             m = np.where(lmask[0]==i,1,0).astype(np.uint8)
             crds = np.array(np.nonzero(m)[::-1]).transpose().astype(np.int32)
-            if( verbose ): print "generating graph from skeleton"
+            if( verbose ): print("generating graph from skeleton")
             g = cmvtg.getGraphsFromSkeleton(m,crds)
             self._populateImageFeaturesToGraph(g)
             ep, bif = cmvtg.findEndpointsBifurcations(g)
@@ -137,7 +137,7 @@ class SkeletonGraph(object):
         nx.draw(graph,pos_yz,with_labels=False, node_size = sz)
         fig.show()
         fig.savefig("currentGraph.png")
-        raw_input('continue')
+        input('continue')
     ###THE FOLLOWING FUNCTIONS ARE USED TO HELP WITH ORDERING THE GRAPHS
     
     def createPathToBifurcation(self, e): #NOT YET USED IN EVALUATEVASCMODEL.PY
@@ -229,7 +229,7 @@ class SkeletonGraph(object):
         bifurcations = self.bifurcations[self.currentGraphKey]
         cg = self.graphs[self.currentGraphKey]
         if( self.VERBOSE ):
-            print "current root is",currentRoot
+            print("current root is",currentRoot)
         for e in endpoints:
             plen, path = nx.bidirectional_dijkstra(cg, currentRoot, e)
             i = 0
@@ -256,7 +256,7 @@ class SkeletonGraph(object):
         o = np.array(origins)
         sz = self.img.shape
         nxy = sz[2]*sz[1]
-        for g in self.graphs.keys():
+        for g in list(self.graphs.keys()):
             endpoints = self.endpoints[g]
             crds = np.array([((i%sz[2]),(i/sz[2])%sz[1],i/(nxy)) for i in endpoints])
             avgX = np.average(crds[:,0])
@@ -276,7 +276,7 @@ class SkeletonGraph(object):
             self.roots[(self.currentGraphKey,key)] = matchedNode
         else:
             if(self.VERBOSE):
-                print "setting root to exact node",origin
+                print("setting root to exact node",origin)
             self.roots[(self.currentGraphKey,key)] = origin
     
     ###OTHER FUNCTIONS
@@ -286,10 +286,10 @@ class SkeletonGraph(object):
         dgs = og.degree()
         root = self.roots[key]
         
-        for n,d in dgs.items():
+        for n,d in list(dgs.items()):
             if( d == 2 and n != root):
                 if( self.VERBOSE):
-                    print "deleting node",n
+                    print("deleting node",n)
                 pred = og.predecessors(n)[0]
                 succ = og.successors(n)[0]
                 p1 = og[pred][n]['path']
@@ -325,7 +325,7 @@ class SkeletonGraph(object):
         for e in edges:
             if( degree == None or og.degree(e[1]) == degree):
                 if( self.VERBOSE ):
-                    print "(%s,%s): path len %d"%(e[0],e[1],len(e[2]['wpath']))
+                    print("(%s,%s): path len %d"%(e[0],e[1],len(e[2]['wpath'])))
             
     def prunePaths2(self, key, threshold=5):
         """Removes terminal paths that are considered to be too short
@@ -334,7 +334,7 @@ class SkeletonGraph(object):
         Can I rewrite this in a more functional way?"""
         og = self.orderedGraphs[key]
         dgs = og.degree()
-        for n,d in dgs.items():
+        for n,d in list(dgs.items()):
             if( d == 1 ):
                 p = og.predecessors(n)[0]
                 path = og[p][n]['path']
@@ -342,27 +342,27 @@ class SkeletonGraph(object):
                     og.remove_node(n)                    
     def saveCompressedGraphs(self,name,protocol=0):
         fo = gzip.open(name,"wb")
-        cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
+        pickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
                       'orderedGraphs':self.orderedGraphs,'roots':self.roots},
                       fo)
         fo.close()
     def saveGraphs(self,name):
         fo = open(name,'wb')
 
-        cPickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
+        pickle.dump({'imgShape':self.img.shape,'skelGraphs':self.graphs,
                       'orderedGraphs':self.orderedGraphs,'roots':self.roots},fo)
         
     def dump(self,fname):
         """Use cPickle to dump the object to the file fname"""
         fo = file(fname,"wb")
-        cPickle.dump(self,fo)
+        pickle.dump(self,fo)
     def load(self,fname):
         """Use cPickle to load a stored SkeletonGraph object and set it equal to
         self"""
         fo = file(fname,"rb")
-        self = cPickle.load(fo)
+        self = pickle.load(fo)
     def insertGraphInImage(self, vimg):
-        for key in self.orderedGraphs.keys():
+        for key in list(self.orderedGraphs.keys()):
             g = self.orderedGraphs[key]
             for node in g.nodes():
                 vimg.flat[node] += 2000
@@ -385,7 +385,7 @@ class SkeletonGraph(object):
     def getEdgesWorldCoordinates(self,g):
         edges = g.edges(data=True)
         for e in edges:
-            if( not e[2].has_key("wpath") ):
+            if( "wpath" not in e[2] ):
                 wpath = []
                 for p in e[2]["path"]:
                     wpath.append(self._transformToWorld(p))
@@ -412,7 +412,7 @@ class SkeletonGraph(object):
         og = self.orderedGraphs[key]
         edges = og.edges(data=True)
         for e in edges:
-            if( e[2].has_key('d0') ):
+            if( 'd0' in e[2] ):
                 d0 = e[2]['d0']
                 d1 = e[2]['d1']
                 try:
@@ -421,7 +421,7 @@ class SkeletonGraph(object):
                     
                     cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                             (d1[0][i],d1[1][i],d1[2][i]),
-                            i) for i in xrange(numPoints)]
+                            i) for i in range(numPoints)]
                     results = self.pool.map_async(computeResidue,cmds).get()
                     for r in results:
                         p[r[0]] = r[1]
@@ -433,16 +433,16 @@ class SkeletonGraph(object):
         oldRoot = cg.graph['root']
         path = nx.shortest_path(cg,oldRoot,newRoot)
         cg.graph["root"] = newRoot
-        for i in xrange(len(path)-1):
+        for i in range(len(path)-1):
             d = cg[path[i]][path[i+1]]
             d['flipped'] = {}
             if( self.VERBOSE):
-                print "removing",path[i],path[i+1],d['path']
+                print("removing",path[i],path[i+1],d['path'])
             cg.remove_edge(path[i],path[i+1])
             cg.add_edge(path[i+1],path[i],attr_dict=d)
             if( self.VERBOSE):
-                print "added",path[i+1],path[i],cg[path[i+1]][path[i]]["path"]
-                raw_input("continue")
+                print("added",path[i+1],path[i],cg[path[i+1]][path[i]]["path"])
+                input("continue")
         
         # I wonder if I need to reorder the edge attributes?
         #safelyRemoveDegree2Nodes(cg,self.reMap)
@@ -474,9 +474,9 @@ class SkeletonGraph(object):
 # Utility FUNCTIONS
 def reverseEdgeAttributes(edgeData):
     """for a path that is being flipped reverse all relevant edge attributes"""
-    if( not edgeData.has_key("flipped") ):
+    if( "flipped" not in edgeData ):
         return
-    if( edgeData.has_key("path") ):
+    if( "path" in edgeData ):
         edgeData['path'] = _flipEdgePath(edgeData['path'])
         edgeData['flipped']['path'] = True
 def deleteDegree2NodesUnordered(g):
@@ -484,10 +484,10 @@ def deleteDegree2NodesUnordered(g):
 
     dgs = g.degree()
     
-    for n,d in dgs.items():
+    for n,d in list(dgs.items()):
         if( d == 2 ):
             if( self.VERBOSE ):
-                print "deleting node",n
+                print("deleting node",n)
             pred = g.predecessors(n)[0]
             succ = g.successors(n)[0]
             p1 = g[pred][n]['path']
@@ -526,7 +526,7 @@ def checkInPlane(args):
     p = ps[0]
     min_diff = abs(-np.inner(d1,pnt)-p)
     min_index = 0
-    for i in xrange(1,numPoints):
+    for i in range(1,numPoints):
         d1 = (d1s[0][i],d1s[1][i],d1s[2][i])
         p = ps[i]
         diff = abs(-np.inner(d1,pnt) - p)
@@ -552,7 +552,7 @@ def deleteExtraEdges(cg, b,VERBOSE=False):
     ndist = {}
     numConnected = nx.number_connected_components(cg)
     if( VERBOSE ):
-        print "number of nodes is ",cg.number_of_nodes()
+        print("number of nodes is ",cg.number_of_nodes())
     for n in cg.neighbors(b):   
         # test whether deleting the edge between n and b increases
         # the number of connected components
@@ -561,18 +561,18 @@ def deleteExtraEdges(cg, b,VERBOSE=False):
         if( newNumConnected == numConnected ): # then this could be a valid deletion
             # compute the step distance from n to its neighbor b
             if( VERBOSE ):
-                print "the edge between %s and %s can be cut without changing the topology of the graph"%(b,n)
+                print("the edge between %s and %s can be cut without changing the topology of the graph"%(b,n))
             ndist[(b,n)] = math.sqrt((n[0]-b[0])**2+(n[1]-b[1])**2+(n[2]-b[2])**2)
         cg.add_edge(b,n)
     if( ndist ):
-        items = ndist.items()
+        items = list(ndist.items())
         #rearrange node,distance pairing so we can sort on distance
-        k,v = zip(*items)
-        items = zip(v,k)
+        k,v = list(zip(*items))
+        items = list(zip(v,k))
         maxNeighbor = max(items)
         # cut the maximum step length edge that is valid to cut
         if( VERBOSE ):
-            print "removing edge",maxNeighbor[1][0],maxNeighbor[1][1]
+            print("removing edge",maxNeighbor[1][0],maxNeighbor[1][1])
         cg.remove_edge(maxNeighbor[1][0],maxNeighbor[1][1])
         cg = deleteExtraEdges(cg,b)
     return cg
@@ -582,18 +582,18 @@ def safelyRemoveNode(og,n, reMap, VERBOSE=False):
     preds = og.predecessors(n)
     succs = og.successors(n)
     for p in preds:
-        if( og[p][n].has_key("mappedPoints") and og[p][n]["mappedPoints"].shape[0]):
+        if( "mappedPoints" in og[p][n] and og[p][n]["mappedPoints"].shape[0]):
             if( VERBOSE ):
-                print "edge from deletion has",og[p][n]["mappedPoints"].shape,"points to remap"
+                print("edge from deletion has",og[p][n]["mappedPoints"].shape,"points to remap")
             reMap.append(og[p][n]["mappedPoints"])
         deletedEdges = og.graph.get("deletedEdges",[])
         deletedEdges.append((p,n))
         og.graph["deletedEdges"] = deletedEdges
         og.remove_node(n)
     for p in succs:
-        if( og[n][p].has_key("mappedPoints") and og[n][p]["mappedPoints"].shape[0]):
+        if( "mappedPoints" in og[n][p] and og[n][p]["mappedPoints"].shape[0]):
             if( VERBOSE ):
-                print "edge from deletion has",og[n][p]["mappedPoints"].shape,"points to remap"
+                print("edge from deletion has",og[n][p]["mappedPoints"].shape,"points to remap")
             reMap.append(og[n][p]["mappedPoints"])
         deletedEdges = og.graph.get("deletedEdges",[])
         deletedEdges.append((n,p))
@@ -601,34 +601,34 @@ def safelyRemoveNode(og,n, reMap, VERBOSE=False):
         og.remove_node(n)
 
     if( VERBOSE ):
-        print "now delete any nodes that are now degree 2"
+        print("now delete any nodes that are now degree 2")
     safelyRemoveDegree2Nodes(og, reMap)
         
 def safelyRemoveDegree2Nodes(og, reMap, VERBOSE=False):
     """Delete all degree 2 nodes (except for the root node if it is degree 2)"""
     dgs = og.degree()
-    for n,d in dgs.items():
+    for n,d in list(dgs.items()):
         if( d == 2 and n != og.graph['root']):
             if( VERBOSE ):
-                print "deleting node",n
+                print("deleting node",n)
             pred = og.predecessors(n)[0]
             succ = og.successors(n)[0]
             p1 = og[pred][n]['path']
-            if( og[pred][n].has_key('mappedPoints') and og[pred][n]["mappedPoints"].shape[0]):
+            if( 'mappedPoints' in og[pred][n] and og[pred][n]["mappedPoints"].shape[0]):
                 reMap.append(og[pred][n]["mappedPoints"])
-                if( VERBOSE ): print "remapping %d points from predecessor"%len(og[pred][n]["mappedPoints"])
+                if( VERBOSE ): print("remapping %d points from predecessor"%len(og[pred][n]["mappedPoints"]))
             else:
-                if( VERBOSE ): print "no mapped points for predecessor"
+                if( VERBOSE ): print("no mapped points for predecessor")
             p2 = og[n][succ]['path']
-            if( og[n][succ].has_key("mappedPoints") and og[n][succ]["mappedPoints"].shape[0]):
+            if( "mappedPoints" in og[n][succ] and og[n][succ]["mappedPoints"].shape[0]):
                 reMap.append(og[n][succ]["mappedPoints"])
-                if( VERBOSE ): print "remapping %d points from successor "%len(og[n][succ]["mappedPoints"])
+                if( VERBOSE ): print("remapping %d points from successor "%len(og[n][succ]["mappedPoints"]))
 
             else:
-                if( VERBOSE ): print "no mapped points for successor"
+                if( VERBOSE ): print("no mapped points for successor")
             newEdge = p1+[n]+p2
             # need to add wpath and then recompute d0,d1,d2
-            if(og[pred][n].has_key('wpath') and og[n][succ].has_key('wpath') ):
+            if('wpath' in og[pred][n] and 'wpath' in og[n][succ] ):
                 # edges have already been fit to this data
                 # merge and refit
                 newWPath = og[pred][n]['wpath']+og[n][succ]['wpath']
@@ -636,10 +636,10 @@ def safelyRemoveDegree2Nodes(og, reMap, VERBOSE=False):
                 og.add_edge(pred,succ,path=newEdge, wpath=newWPath)
                 fitEdge(og,(pred,succ))
             else:
-                if( VERBOSE ): print "no world path to merge"
+                if( VERBOSE ): print("no world path to merge")
 def getShortestTerminalNode(og):
     dgs = og.degree()
-    for n,d in dgs.items():
+    for n,d in list(dgs.items()):
         if( d == 1 ):
             try:
                 p = og.predecessors(n)[0]
@@ -682,12 +682,12 @@ def fitEdge(og,e,VERBOSE=False):
     ae = np.array(path)
     
     if( ae.shape[0] > 3 ): # there are not enough points to fit with
-        if( VERBOSE ): print "refitting edge with %d points"%len(path)
+        if( VERBOSE ): print("refitting edge with %d points"%len(path))
 
         s = ae.shape[0]/2.0
 
         fit2 = splprep(ae.transpose(),task=0,full_output =1, s=s)[0]
-        u = np.array(range(ae.shape[0]+1)).\
+        u = np.array(list(range(ae.shape[0]+1))).\
                 astype(np.float64)/(ae.shape[0])
         # location of spline points
         og[e[0]][e[1]]['d0'] = splev(u,fit2[0],der=0)
@@ -696,7 +696,7 @@ def fitEdge(og,e,VERBOSE=False):
         # second derivative (curvature) of spline
         og[e[0]][e[1]]['d2'] = np.array(splev(u,fit2[0],der=2))
     else:
-        if( VERBOSE ): print "no or insufficient points to fit"
+        if( VERBOSE ): print("no or insufficient points to fit")
         og[e[0]][e[1]]['d0'] = None
         og[e[0]][e[1]]['d1'] = None
         og[e[0]][e[1]]['d2'] = None
@@ -707,7 +707,7 @@ def mapPointsToPlanes(og, pool, verbose=False):
     edges = og.edges(data = True)
     for e in edges:
         if( verbose ):
-            print "processing edge %s->%s"%(e[0],e[1])
+            print("processing edge %s->%s"%(e[0],e[1]))
         try:
             tmp = e[2].pop("planePoints")
             tmp = 0
@@ -715,7 +715,7 @@ def mapPointsToPlanes(og, pool, verbose=False):
             pass
         try:
             planePoints = {}
-            if( e[2].has_key("mappedPoints") ):
+            if( "mappedPoints" in e[2] ):
                 mps = e[2]['mappedPoints']
                 d1s = e[2]['d1']
                 ps  = e[2]['p']
@@ -726,14 +726,14 @@ def mapPointsToPlanes(og, pool, verbose=False):
                 results = pool.map_async(cmvtg.checkInPlane,cmds).get()
                 planePoints = cmvtg.mapPlaneResultsWithTolerance(results)
             e[2]["planePoints"] = planePoints
-        except KeyError, error:
-            if( verbose ): print "failed to map to plane with  error", error
+        except KeyError as error:
+            if( verbose ): print("failed to map to plane with  error", error)
             pass
 def remapVoxelsToGraph(og, reMap, pool, verbose=True):
     """take the pool of points stored in self.reMap and map them to edges
     in the graph"""
     if( verbose ):
-        print "remapping freed voxels to remaining edges"
+        print("remapping freed voxels to remaining edges")
     if( not reMap ):
         return
     points_toMap = reMap[0]
@@ -741,9 +741,9 @@ def remapVoxelsToGraph(og, reMap, pool, verbose=True):
         try:
             points_toMap = np.concatenate((points_toMap,p),axis=0)
         except ValueError:
-            if( verbose ): print "failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape)
+            if( verbose ): print("failed in remapVoxelsToGraph: couldn't concatenate %s with %s"%(points_toMap.shape,p.shape))
             #raw_input('continue')
-    if( verbose ): print points_toMap.shape
+    if( verbose ): print(points_toMap.shape)
     mapVoxelsToGraph(og, points_toMap,pool, worldCoordinates=True, verbose=False)
     reMap = []
 def mapVoxelsToGraph(cg, points_toMap, pool, mp_key="mappedPoints",worldCoordinates=False, verbose=False, origin= None, spacing = None ):
@@ -755,17 +755,17 @@ def mapVoxelsToGraph(cg, points_toMap, pool, mp_key="mappedPoints",worldCoordina
     # get the coordinates of the nonzero points of the mask that are not part of the skeleton
     if( not worldCoordinates ):
         if( verbose ):
-            print "transforming to world coordinates with",origin,spacing
+            print("transforming to world coordinates with",origin,spacing)
         points = origin + spacing*points_toMap
     else:
         points = points_toMap
-    if( verbose ): print type(points)
+    if( verbose ): print(type(points))
     try:
-        if( verbose ): print points.shape
+        if( verbose ): print(points.shape)
     except:
-        if( verbose ): print "couldn't get shape for points"
-    cmds = [(points[i,:],cg) for i in xrange(points_toMap.shape[0])]
-    if( verbose ): print "points_toMap",points_toMap,type(points[0,:])
+        if( verbose ): print("couldn't get shape for points")
+    cmds = [(points[i,:],cg) for i in range(points_toMap.shape[0])]
+    if( verbose ): print("points_toMap",points_toMap,type(points[0,:]))
 
     results = pool.map_async(cmvtg.mapPToEdge, cmds)
     resultList = results.get()
@@ -776,25 +776,25 @@ def mapVoxelsToGraph(cg, points_toMap, pool, mp_key="mappedPoints",worldCoordina
     for r in resultList:
     # r is a tuple of the point and the edge mapped to by that point        
         mdata[r[1]].append(r[0])
-    for e in mdata.keys():
+    for e in list(mdata.keys()):
         mps = cg[e[0]][e[1]].get(mp_key,None)
         newmps = np.array(mdata[e])
-        if( verbose ): print "%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1])
+        if( verbose ): print("%d points mapped to (%s,%s)"%(newmps.shape[0],e[0],e[1]))
         if( mps == None ):
             cg[e[0]][e[1]][mp_key] = newmps
         else:
             try:
                 if( verbose ):
-                    print "merging %d points with %d points"%(mps.shape[0],len(mdata[e]))
+                    print("merging %d points with %d points"%(mps.shape[0],len(mdata[e])))
                 cg[e[0]][e[1]][mp_key] = np.concatenate((mps,newmps),axis=0)
-            except Exception, error:
+            except Exception as error:
                 pass #print "failed to merge surface points for (%s,%s): couldn't concatenate %s with %s"%(e[0],e[1],mps.shape,newmps.shape)
-    for e in mdata.keys():
+    for e in list(mdata.keys()):
         cg[e[0]][e[1]][mp_key].shape
 def defineOrthogonalPlanes(og,pool):
     edges = og.edges(data=True)
     for e in edges:
-        if( e[2].has_key('d0') ):
+        if( 'd0' in e[2] ):
             d0 = e[2]['d0']
             d1 = e[2]['d1']
             try:
@@ -802,12 +802,12 @@ def defineOrthogonalPlanes(og,pool):
                 p = np.zeros((numPoints),dtype=np.float64)
                 cmds = [((d0[0][i],d0[1][i],d0[2][i]),
                         (d1[0][i],d1[1][i],d1[2][i]),
-                        i) for i in xrange(numPoints)]
+                        i) for i in range(numPoints)]
                 results = pool.map_async(computeResidue,cmds).get()
                 for r in results:
                     p[r[0]] = r[1]
                 e[2]['p'] = p
-            except Exception, error:
-                print "defineOrthogonalPlanes",error
+            except Exception as error:
+                print("defineOrthogonalPlanes",error)
                 pass
 

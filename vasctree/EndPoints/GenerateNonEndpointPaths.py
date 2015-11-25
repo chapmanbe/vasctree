@@ -10,7 +10,7 @@ import VascSegment
 from RelatedPoints import *
 import VascMask
 import time
-import cPickle
+import pickle
 import numpy as na
 
 def GenerateNonEndpointPaths():
@@ -18,7 +18,7 @@ def GenerateNonEndpointPaths():
     #paths=open("PE00026Paths.pckle", "wb") #stores the paths
    #indexes=open("Indexes.pckle", "wb") #stores the index locations for each set of crds.
     endpoints=open("PE00026Nonendpoints.pckle", 'rb')
-    inds=cPickle.load(endpoints)
+    inds=pickle.load(endpoints)
     img=io.readImage("PE000026Filter0_seg.mha",  returnITK=False,  imgMode="uchar")
     mask = na.where(img>0, 1, 0)
     instance=VascMask.VascMask()
@@ -27,8 +27,8 @@ def GenerateNonEndpointPaths():
     instance.getFOM()
     #inds=instance.getInds(crds)
     instance.createNXGraph()
-    cPickle.dump(inds, indexes)
-    cPickle.dump(instance.G, graph)
+    pickle.dump(inds, indexes)
+    pickle.dump(instance.G, graph)
 if __name__=='__main__':
     GeneratePaths()
     

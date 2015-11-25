@@ -40,7 +40,7 @@ def main():
     sg.setOriginalImage(oimg)
     sg.getGraphsFromSkeleton(verbose=False)
     sg.setLargestGraphToCurrentGraph()
-    sg.graphs.keys()
+    list(sg.graphs.keys())
     sg.findEndpointsBifurcations()
     endp = [n for n in sg.cg.nodes() if sg.cg.degree(n)==1]
     endpa = np.array(endp)

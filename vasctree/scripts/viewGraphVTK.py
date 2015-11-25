@@ -34,8 +34,8 @@ def getParser():
         parser.add_argument('-l','--label',dest='label',default='')
 
         return parser
-    except Exception, error:
-        print "failed in getParser", error  
+    except Exception as error:
+        print("failed in getParser", error)  
         sys.exit(0)               
 
 

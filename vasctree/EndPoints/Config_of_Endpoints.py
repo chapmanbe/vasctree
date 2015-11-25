@@ -8,7 +8,7 @@ import sys
 #import vasctrees.nxvasc as nxvasc
 sys.path.append('../')
 import nxvasc
-import cPickle
+import pickle
 import numpy as na
 import scipy
 import math
@@ -20,7 +20,7 @@ endpoints=open('Modifiedf0MipEndpoints.pckle','rb')
 #endpoints=sys.argv[1]
 #fo = open(endpoints,'rb')
 #print endpoints
-crds=cPickle.load(endpoints)
+crds=pickle.load(endpoints)
 #Read in image
 #img= io.readImage(str(sys.argv[2]),  returnITK=False,  imgMode='uchar')
 img= io.readImage('PE00026Filter0_seg.mha',  returnITK=False,  imgMode='uchar')
@@ -46,7 +46,7 @@ for crd in crds:
     neighbors = mask[crd[2]-1:crd[2]+2, crd[1]-1:crd[1]+2,  crd[0]-1:crd[0]+2]
     Neighbors.append(neighbors)
     
-cPickle.dump([Neighbors, crds],  output) 
+pickle.dump([Neighbors, crds],  output) 
 
 
 

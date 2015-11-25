@@ -12,7 +12,7 @@ import os
 import sys
 sys.path.append('../')
 import nxvasc
-import cPickle
+import pickle
 import numpy as na
 import scipy
 import math
@@ -20,7 +20,7 @@ import imageTools.ITKUtils.io as io
         
 #Read in modified .pckle file from 5x5endpointMatch.py
 endpoints=open('Modifiedf0MipEndpoints5x5.pckle','rb')
-crds=cPickle.load(endpoints)
+crds=pickle.load(endpoints)
 img= io.readImage('PE00026Filter0_seg.mha',  returnITK=False,  imgMode='uchar')
 mask = na.where(img>0, 1, 0) #create the mask
 instance=nxvasc.nxvasc()#create an instance of the class
@@ -37,7 +37,7 @@ for crd in crds:  \
     #grab the 5x5x5 neighborhood 
     neighbors = mask[crd[2]-2:crd[2]+3, crd[1]-2:crd[1]+3,  crd[0]-2:crd[0]+3]
     Neighbors.append(neighbors)
-cPickle.dump([Neighbors, crds],  output) 
+pickle.dump([Neighbors, crds],  output) 
 
 
     

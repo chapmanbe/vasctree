@@ -54,29 +54,29 @@ def main():
     sg.setOriginalImage(oimg)
     sg.getGraphsFromSkeleton(verbose=True)
     sg.setLargestGraphToCurrentGraph()
-    sg.graphs.keys()
+    list(sg.graphs.keys())
     sg.findEndpointsBifurcations()
-    print "set root"
+    print("set root")
     root = rootRMS(sg.cg)
 #sg.viewGraph()
     sg.setRoot(root,key="og_rms")
-    print "trace endpoints"
+    print("trace endpoints")
     sg.traceEndpoints(key='og_rms')
     ogkey = sg.getLargestOrderedGraphKey()
-    print "prune tree"
+    print("prune tree")
     sg.deleteDegree2Nodes(ogkey)
     sg.prunePaths(ogkey)
     sg.deleteDegree2Nodes(ogkey)
-    print "fit edges"
+    print("fit edges")
     sg.fitEdges(key=ogkey)
-    print "Define orthogonal planes"
+    print("Define orthogonal planes")
     sg.defineOrthogonalPlanes(ogkey)
-    print "Now get surface points of original image to map to the centerlines"
+    print("Now get surface points of original image to map to the centerlines")
     dfe = ndi.distance_transform_cdt(oimg)
     points_toMap = np.array(np.nonzero(np.where(dfe==1,1,0))[::-1]).transpose().astype(np.int32)
-    print "mapVoxelsToGraph"
+    print("mapVoxelsToGraph")
     sg.mapVoxelsToGraph(points_toMap,ogkey)
-    print "assignMappedPointsToPlanes"
+    print("assignMappedPointsToPlanes")
     sg.assignMappedPointsToPlanes(ogkey)
     sg.saveCompressedGraphs(sys.argv[3])
 

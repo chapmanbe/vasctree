@@ -2,7 +2,7 @@ import os
 import sys
 #sys.path.append('../../vasctrees')
 import vasctrees.nxvasc as nxvasc
-import cPickle
+import pickle
 import numpy as na
 import scipy
 import math
@@ -32,14 +32,14 @@ def showPoints(point, neighbors):
     pyplot.title("mipx")
     pyplot.imshow(slice2,  interpolation = 'nearest')
     figure = pyplot.show()
-    raw_input('continue')
+    input('continue')
  
 #Read in modified .pckle file
 endpoints=open('Modifiedf0MipEndpoints.pckle','rb')
 #endpoints=sys.argv[1]
 #fo = open(endpoints,'rb')
 #crds=cPickle.load(fo)
-crds = cPickle.load(endpoints)
+crds = pickle.load(endpoints)
 #Read in image
 #img= io.readImage(str(sys.argv[2]),  returnITK=False,  imgMode='uchar')
 img= io.readImage('PE00026Filter0_seg.mha',  returnITK=False,  imgMode='uchar')

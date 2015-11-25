@@ -22,20 +22,20 @@ def getParser():
         parser.add_option("-n", "--numIter", dest="iterations",type="int",default=10)
 
         return parser
-    except Exception,  error:
-        print "failed to generate parser",  error
+    except Exception as  error:
+        print("failed to generate parser",  error)
         
 
 
 def main():
     files = glob.glob("PE?????_edited_fill_skel.mha.gz")
     for file in files:
-        print file
+        print(file)
         #su = subprocess.call("gunzip %s"%file,shell=True)
         tmp = os.path.splitext(file)
         r1 = re.compile(r"""PE(\d{5,5})_edited""")
         caseNum = "%04d.mps.pckle"%(int(r1.findall(tmp[0])[0]))
-        print tmp[0],caseNum
+        print(tmp[0],caseNum)
         sg = subprocess.call("getSeanGraphs.py --img %s --origins %s"%(tmp[0],os.path.join("..","seanOrigins",caseNum)),shell=True)
         #sc = subprocess.call("gzip %s"%tmp[0],shell=True)
 

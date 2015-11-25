@@ -4,17 +4,17 @@ direction for the 7x7neighborhood, to be sure they are all rotationally invarian
 
 from sliceOrientation import OrientMask
 import sys
-import cPickle
+import pickle
 import numpy as na
 
 def main():
     fle=open("Configuration7x7.pckle",'rb') 
-    data = cPickle.load(fle)
+    data = pickle.load(fle)
     output=open("OrientedEndpoints7x7.pckle",  'wb')
     modifiedEp = []
     count=0
     remove=[]
-    print "%d endpoints"%len(data[0])
+    print("%d endpoints"%len(data[0]))
     for ep in data[0]:
         count +=1
         if len(ep)<7:
@@ -23,7 +23,7 @@ def main():
             om = OrientMask(ep)
             om.orient()
             modifiedEp.append(om.mask) 
-    cPickle.dump(modifiedEp , output)
+    pickle.dump(modifiedEp , output)
     
 if __name__ == '__main__':
     main()

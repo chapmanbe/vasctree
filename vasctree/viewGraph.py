@@ -57,8 +57,8 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
     axes.set_axis_off()
     ax.set_axes(axes)
     pp.set_cmap(colormap)
-    vmax = np.max(mapping.values())
-    vmin = np.min(mapping.values())
+    vmax = np.max(list(mapping.values()))
+    vmin = np.min(list(mapping.values()))
     cNorm = colors.Normalize(vmin=vmin,vmax=vmax)
     scalarMap = cm.ScalarMappable(norm=cNorm,cmap=pp.get_cmap(colormap))
     if( root ):
@@ -70,7 +70,7 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
             sp = e[2]['d0']
             mps = e[2]['mappedPoints']
             clr = scalarMap.to_rgba(mapping[(e[0],e[1])])
-            print "%s with mapping %s maps to color %s"%((e[0],e[1]),mapping[(e[0],e[1])],clr)
+            print("%s with mapping %s maps to color %s"%((e[0],e[1]),mapping[(e[0],e[1])],clr))
             ax.plot(sp[0],sp[1],sp[2],color = clr)
             if showSurface :
                 try:
@@ -79,10 +79,10 @@ def getGraphWithMapping(fig, og, mapping, alpha=0.05,subsample=4,
                     pass
 
         except KeyError:
-            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+            print("cannot plot edge (%s,%s)"%(e[0],e[1]))
         except TypeError:
             if( e[2]['d0'] == None ):
-                print "No fitted data for edge (%s,%s)"%(e[0],e[1])
+                print("No fitted data for edge (%s,%s)"%(e[0],e[1]))
 
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
     ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
@@ -108,7 +108,7 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4,
         dg = og.degree(nodes[i][0])
         if( labelNodes and (degree == None or dg == degree)):
             ax.text(narray[i,0],narray[i,1],narray[i,2],"(%d,%d,%d)"%(nodes[i][0][0],nodes[i][0][1],nodes[i][0][2]))
-    print("root is",root)
+    print(("root is",root))
     if root:
         rcrd = og.node[root]["wcrd"]
         ax.text(rcrd[0],rcrd[1],root[2],"Root")
@@ -124,26 +124,26 @@ def get3DPlot(fig, og,labelNodes=False, alpha=0.05,subsample=4,
             if showSurface:
                 try:
                     ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
-                except Exception, error:
-                    print("couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
-                    (e[0],e[1],mps.shape,error))
+                except Exception as error:
+                    print(("couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)))
             if showMidPlane:
                 try:
                     planePoints = e[2]['planePoints']
-                    midpoint = len(planePoints.keys())/2
+                    midpoint = len(list(planePoints.keys()))/2
                     mps = np.array(e[2]['planePoints'][midpoint])
 
                     ax.scatter(mps[:,0],mps[:,1],mps[:,2],color = clr,marker='+',alpha=0.5)
-                except Exception, error:
-                    print("couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
-                    (e[0],e[1],mps.shape,error))
+                except Exception as error:
+                    print(("couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error)))
 
             counter += 1
         except KeyError:
-            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+            print("cannot plot edge (%s,%s)"%(e[0],e[1]))
         except TypeError:
             if( e[2]['d0'] == None ):
-                print "No fitted data for edge (%s,%s)"%(e[0],e[1])
+                print("No fitted data for edge (%s,%s)"%(e[0],e[1]))
 
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
     ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
@@ -171,7 +171,7 @@ def get3DPlotAnatomy(fig, og,labelNodes=False, alpha=0.05,subsample=4,
         dg = og.degree(nodes[i][0])
         if( labelNodes and (degree == None or dg == degree)):
             ax.text(narray[i,0],narray[i,1],narray[i,2],"(%d,%d,%d)"%(nodes[i][0][0],nodes[i][0][1],nodes[i][0][2]))
-    print "root is",root
+    print("root is",root)
     if( root ):
         rcrd = og.node[root]["wcrd"]
         ax.text(rcrd[0],rcrd[1],root[2],"Root")
@@ -193,26 +193,26 @@ def get3DPlotAnatomy(fig, og,labelNodes=False, alpha=0.05,subsample=4,
             if( showSurface):
                 try:
                     ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
-                except Exception, error:
-                    print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
-                    (e[0],e[1],mps.shape,error)
+                except Exception as error:
+                    print("couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error))
             if( showMidPlane ):
                 try:
                     planePoints = e[2]['planePoints']
-                    midpoint = len(planePoints.keys())/2
+                    midpoint = len(list(planePoints.keys()))/2
                     mps = np.array(e[2]['planePoints'][midpoint])
 
                     ax.scatter(mps[:,0],mps[:,1],mps[:,2],color = clr,marker='+',alpha=0.5)
-                except Exception, error:
-                    print "couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
-                    (e[0],e[1],mps.shape,error)
+                except Exception as error:
+                    print("couldn't plot midplane points for edge (%s,%s). Plane points shape is %s. Error is %s"%\
+                    (e[0],e[1],mps.shape,error))
 
             counter += 1
         except KeyError:
-            print "cannot plot edge (%s,%s)"%(e[0],e[1])
+            print("cannot plot edge (%s,%s)"%(e[0],e[1]))
         except TypeError:
             if( e[2]['d0'] == None ):
-                print "No fitted data for edge (%s,%s)"%(e[0],e[1])
+                print("No fitted data for edge (%s,%s)"%(e[0],e[1]))
 
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3, picker=5)
     ax.scatter([rcrd[0]],[rcrd[1]],[rcrd[2]],color='r',marker='o',linewidth=10,picker=5)
@@ -225,10 +225,10 @@ def get3DPlotAnatomy(fig, og,labelNodes=False, alpha=0.05,subsample=4,
     return ax
 
 def onclick(event):
-    print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-        event.button, event.x, event.y, event.xdata, event.ydata)
+    print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+        event.button, event.x, event.y, event.xdata, event.ydata))
 def onpick(event):
-    print event.artist
+    print(event.artist)
     if event.artist!='line': return True
 
     N = len(event.ind)
@@ -236,7 +236,7 @@ def onpick(event):
 
 
     for subplotnum, dataind in enumerate(event.ind):
-        print subplotnum, dataind
+        print(subplotnum, dataind)
     return True
 def viewUndirectedGraph(og, fignum=1, subsample=4, verbose=True,
         degree = None, fileName = None, view=True ):
@@ -251,7 +251,7 @@ def viewUndirectedGraph(og, fignum=1, subsample=4, verbose=True,
 def viewSurfaceGraph(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True,
         degree = None, root=None, fileName = None, view=True,theta=100,phi= 120):
     """view an ordered graph generated using the SkeltonGraph class"""
-    print "generating surface view"
+    print("generating surface view")
     fig1 = pp.figure(fignum)
     ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,
                     alpha=alpha,subsample=subsample,
@@ -282,13 +282,13 @@ def viewGraphWithMapping(og, mapping, fignum=1,  alpha=0.05,subsample=4,
 def viewGraph0(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True,
         degree = None, showSurface=True, root=None, fileName = None, view=True,theta=100,phi= 120):
     """view an ordered graph generated using the SkeltonGraph class"""
-    print "generating surface view"
+    print("generating surface view")
     fig1 = pp.figure(fignum)
     ax1 = get3DPlot(fig1, og, labelNodes=labelNodes,alpha=alpha,subsample=subsample,
                     verbose=verbose,degree=degree,
                     showSurface=showSurface,showMidPlane=False,root=root)
     ax1.view_init(theta,phi)
-    print "generating edge only view"
+    print("generating edge only view")
     if( fileName ):
         fig1.savefig(fileName+".fig1.png")
     if( view ):
@@ -322,7 +322,7 @@ def viewGraph2(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4,
 def viewGraph1(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, degree = None, showSurface=True, root=None):
     """view an ordered graph generated using the SkeltonGraph class"""
     if( verbose ):
-        print "viewing graph"
+        print("viewing graph")
     edges = og.edges(data=True)
     nodes = og.nodes(data=True)
     narray = np.zeros((len(nodes),3),np.float32)
@@ -339,7 +339,7 @@ def viewGraph1(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=T
         dg = og.degree(nodes[i][0])
         if( labelNodes and (degree == None or dg == degree)):
             ax.text(narray[i,0],narray[i,1],narray[i,2],"(%d,%d,%d)"%(nodes[i][0][0],nodes[i][0][1],nodes[i][0][2]))
-    print "root is",root
+    print("root is",root)
     if( root ):
         rcrd = og.node[root]["wcrd"]
         ax.text(rcrd[0],rcrd[1],root[2],"Root")
@@ -354,9 +354,9 @@ def viewGraph1(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=T
         if( showSurface):
             try:
                 ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
-            except Exception, error:
-                print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
-                (e[0],e[1],mps.shape,error)
+            except Exception as error:
+                print("couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                (e[0],e[1],mps.shape,error))
         counter += 1
 
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3)
@@ -371,7 +371,7 @@ def viewGraph1(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=T
 def viewGraphWithMidPlane(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4, verbose=True, degree = None, showMidPlane=True, root=None):
     """view an ordered graph generated using the SkeltonGraph class"""
     if( verbose ):
-        print "viewing graph"
+        print("viewing graph")
     edges = og.edges(data=True)
     nodes = og.nodes(data=True)
     narray = np.zeros((len(nodes),3),np.float32)
@@ -388,7 +388,7 @@ def viewGraphWithMidPlane(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4
         dg = og.degree(nodes[i][0])
         if( labelNodes and (degree == None or dg == degree)):
             ax.text(narray[i,0],narray[i,1],narray[i,2],"(%d,%d,%d)"%(nodes[i][0][0],nodes[i][0][1],nodes[i][0][2]))
-    print "root is",root
+    print("root is",root)
     if( root ):
         rcrd = og.node[root]["wcrd"]
         ax.text(rcrd[0],rcrd[1],root[2],"Root")
@@ -401,13 +401,13 @@ def viewGraphWithMidPlane(og, fignum=1, labelNodes=False, alpha=0.05,subsample=4
         clr = colors[counter%len(colors)]
         ax.plot(sp[0],sp[1],sp[2],color = clr)
         if( showMidPlane ):
-            midpoint = len(pp.keys())/2
+            midpoint = len(list(pp.keys()))/2
             mps = e[2]['planePoints'][midpoint]
             try:
                 ax.scatter(mps[::ss,0],mps[::ss,1],mps[::ss,2],color = clr,marker='+',alpha=0.05)
-            except Exception, error:
-                print "couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
-                (e[0],e[1],mps.shape,error)
+            except Exception as error:
+                print("couldn't plot surface for edge (%s,%s). Surface points shape is %s. Error is %s"%\
+                (e[0],e[1],mps.shape,error))
         counter += 1
 
     ax.scatter(narray[:,0],narray[:,1],narray[:,2],color='k',marker='o',linewidth=3)

@@ -19,8 +19,8 @@ def getParser():
         parser.add_option("-m", "--median",action='store_true', dest='median',default=False)
         parser.add_option("-c", "--close",action='store_true', dest='close',default=False)
         return parser
-    except Exception,  error:
-        print "failed to generate parser",  error
+    except Exception as  error:
+        print("failed to generate parser",  error)
 
 def dilateMask(fname, median, closing, kernel):
     """dilate the binary mask passed in with the positional argument img.
@@ -34,7 +34,7 @@ def dilateMask(fname, median, closing, kernel):
     
     img = sitk.ReadImage(fname)
     if( median ):
-        print "running median"
+        print("running median")
         fmod += "_median_True"
         median = sitk.MedianImageFilter()
         median.SetRadius([1,1,1])
@@ -42,7 +42,7 @@ def dilateMask(fname, median, closing, kernel):
     else:
         fmod += "_median_False"
     if( closing ):
-        print "running closing"
+        print("running closing")
         fmod += "_closing_True_kernel_%d_%d_%d"%(kernel[0],kernel[1],kernel[2])
         closing = sitk.BinaryMorphologicalClosingImageFilter()
         closing.SetForegroundValue(1)
@@ -57,7 +57,7 @@ def main():
         
     parser = getParser()
     (options, args) = parser.parse_args()
-    print options
+    print(options)
     dilateMask(options.fname, options.median, options.close,options.kernel)
 
         

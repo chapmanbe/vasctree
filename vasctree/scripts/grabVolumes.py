@@ -15,7 +15,7 @@ graph-key the string label associated with the graph.
 
 If the graph is modified, a new graph is added to the SkeletonGraph object with
 a graph-key equal to the specified graph-key concatenated with '_volume'"""
-import cPickle
+import pickle
 import numpy as np
 import sys
 import argparse
@@ -37,7 +37,7 @@ class VolumeGrabber(object):
         self.sg = SkeletonGraph()
         self.sg.orderedGraphs = self.data['orderedGraphs']
         self.sg.roots = self.data['roots']
-        if(not self.sg.orderedGraphs[self.key].graph.has_key("root")):
+        if("root" not in self.sg.orderedGraphs[self.key].graph):
             self.sg.orderedGraphs[self.key].graph["root"] = self.sg.roots[self.key]
 
         self._setGraphData()    
@@ -83,10 +83,10 @@ class VolumeGrabber(object):
                 e[2]['exterior2surface'] = None
 
     def saveModifiedData(self):
-        print "saving modified data"
+        print("saving modified data")
         self.data['orderedGraphs'] = self.sg.orderedGraphs
         f = file(self.fname,"wb")
-        cPickle.dump(self.data,f)
+        pickle.dump(self.data,f)
     def _setGraphData(self):
         self.og = self.sg.orderedGraphs[self.key]
         self.edges = self.og.edges(data=True)
@@ -95,13 +95,13 @@ class VolumeGrabber(object):
         
 
 def getOrderedGraphKeys(ogs):
-    keys = ogs.keys()
+    keys = list(ogs.keys())
     txt = "Select number of desired key:\n"
     for i in range(len(keys)):
         txt += """%d\t\t%s\n"""%(i,keys[i])
     while(True):
         try:
-            keyNum = input(txt)
+            keyNum = eval(input(txt))
             if( 0 <= keyNum and keyNum < len(keys) ):
                 return keys[keyNum]
         except:
@@ -118,8 +118,8 @@ def getParser():
         parser.add_argument('-l','--label',dest='label',default='')
 
         return parser
-    except Exception, error:
-        print "failed in getParser", error  
+    except Exception as error:
+        print("failed in getParser", error)  
         sys.exit(0)               
         
 if __name__ == '__main__':

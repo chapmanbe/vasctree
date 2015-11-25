@@ -19,11 +19,11 @@ def rerootGraph(graph,newRoot):
     path = nx.shortest_path(og,oldRoot,newRoot)
     og.graph["root"] = newRoot
     reMap = []
-    for i in xrange(len(path)-1):
+    for i in range(len(path)-1):
         d = og[path[i]][path[i+1]]
         d['path'] = d['path'][::-1]
         d['wpath'] = d['wpath'][::-1]
-        print "%d surface points"%len(d['mappedPoints'])
+        print("%d surface points"%len(d['mappedPoints']))
         og.remove_edge(path[i],path[i+1])
         og.add_edge(path[i+1],path[i],attr_dict=d)
         sg.fitEdge(og,(path[i+1],path[i]))
@@ -32,11 +32,11 @@ def rerootGraph(graph,newRoot):
     sg.safelyRemoveDegree2Nodes(og, reMap)
     edges = og.out_edges(og.graph['root'], data=True)
     for e in edges:
-        print e[2].keys()
+        print(list(e[2].keys()))
 
     #viewGraph.viewGraph2(og,root=og.graph['root'])
     #raw_input('continue')
-    print "%d points to remap"%len(reMap)
+    print("%d points to remap"%len(reMap))
     sg.defineOrthogonalPlanes(og)
     sg.remapVoxelsToGraph(og, reMap)
     sg.mapPointsToPlanes(og)
@@ -58,8 +58,8 @@ def getParser():
         parser.add_argument("--set_label",dest='root_label', default=[],nargs=3)
 
         return parser
-    except Exception, error:
-        print "failed in getParser", error  
+    except Exception as error:
+        print("failed in getParser", error)  
         sys.exit(0)               
 
 def main():
@@ -69,13 +69,13 @@ def main():
     data = utils.readGraphs(options.fname)
     ogs = data['orderedGraphs']
     key = (options.graphNumber,options.graphLabel)
-    if( not ogs.has_key(key) ):
+    if( key not in ogs ):
         key = utils.getOrderedGraphKeys(data['orderedGraphs'])
 
     if options.root_label:
         graph,key = getGraph(data['orderedGraphs'],1,label=options.graphLabel)
 
-    print "procesing graph with key",key
+    print("procesing graph with key",key)
     num = key[0]
     label = key[1]
 
@@ -86,7 +86,7 @@ def main():
         endp = [n for n in graph.nodes() if graph.degree(n)==1]
         endpa = np.array(endp)
         medianx = np.median(endpa[:,0])
-        print "computing based on graph median of",medianx
+        print("computing based on graph median of",medianx)
         endp.sort(key=lambda n: abs(n[0]-medianx))
         newRoot = endp[0]
         ng_medianx = rerootGraph(graph,newRoot)
@@ -95,7 +95,7 @@ def main():
         data['orderedGraphs'][(num,label+"_reroot_medianx")] = ng_medianx
     if( options.do_meanx ):
         meanx = np.mean(endpa[:,0])
-        print "computing based on graph mean of",meanx
+        print("computing based on graph mean of",meanx)
         endp.sort(key=lambda n: abs(n[0]-meanx))
         newRoot = endp[0]
         ng_meanx = rerootGraph(graph,newRoot)
@@ -112,10 +112,10 @@ def main():
         maxk = np.max(endpa[:,2])
         endp.sort(key=lambda n: np.sqrt((n[0][0]-256)**2+(n[0][1]-0)**2+(n[0][2]-maxk)**2))
         endp_sub = endp # endp[::len(endp)/2]
-        print "examining %d of %d endpoints"%(len(endp_sub),len(endp))
+        print("examining %d of %d endpoints"%(len(endp_sub),len(endp)))
         #endp_sub.sort(key=lambda n: n[0][2])
-        print endp
-        print "selecting root node",endp_sub[0]
+        print(endp)
+        print("selecting root node",endp_sub[0])
         newRoot = endp[0][0]
         ng_minz = rerootGraph(graph, newRoot)
         ng_minz.graph["root description"] = "root based on mn z for center x nodes"

@@ -31,7 +31,7 @@ import os
 import numpy as na
 import scipy.ndimage as ndi
 import math
-import cPickle
+import pickle
 import sys
 
 import string
@@ -105,8 +105,8 @@ class nxvasc(object):
                             a.append(k)
             a = na.reshape(na.array(a),(78,1))
             self.d26 = na.concatenate((self.d26,a),axis=1)
-        except Exception, error:
-            print "failed in get3x3matrix(): ", error
+        except Exception as error:
+            print("failed in get3x3matrix(): ", error)
             
     def get5x5matrix(self): #ADDED 2-16-2010AM
         """define the 5x5 neighborhood relationship matrix"""
@@ -133,8 +133,8 @@ class nxvasc(object):
             a = na.reshape(na.array(a),(372,1))
 #            print len(self.d124)
             self.d124 = na.concatenate((self.d124,a),axis=1)
-        except Exception, error:
-            print "failed in get5x5matrix(): ", error
+        except Exception as error:
+            print("failed in get5x5matrix(): ", error)
     def get7x7matrix(self): #ADDED 2-17-2010AM
         """define the 7x7 neighborhood relationship matrix"""
         try:
@@ -157,8 +157,8 @@ class nxvasc(object):
             a = na.reshape(na.array(a),(1026,1))
             self.d342 = na.concatenate((self.d342,a),axis=1)
             #print "d342",  self.d342
-        except Exception, error:
-            print "failed in get7x7matrix(): ", error
+        except Exception as error:
+            print("failed in get7x7matrix(): ", error)
             
     def setCostFunction(self,func): #cost function
         """set the object cost function to be equal to the func referenced in
@@ -184,17 +184,17 @@ class nxvasc(object):
         try:
             self.vals = na.ones(len(self.inds),na.float32)
             self.newsources = na.zeros(len(self.inds),na.int32)
-        except Exception, error:
-            print "failed in createValues", error
+        except Exception as error:
+            print("failed in createValues", error)
     def createMaskDictionary(self):
         """Create dictionary that maps the index into the 3D volume to an index into the mask
     The 1D array into the 3D volume is the key of the dictionary.
     The ordinal position of the index is the value """
         try:
-            self.maskMap = dict(zip(self.inds,range(len(self.inds))))
+            self.maskMap = dict(list(zip(self.inds,list(range(len(self.inds))))))
             self.maskSet = set(self.inds)
-        except Exception, error:
-            print "failed in createMaskDictionary", error
+        except Exception as error:
+            print("failed in createMaskDictionary", error)
     def setFigureOfMeritfile(self, fomFile):
         """Sets object figure of merit image to data in fomFile"""
         self.fomFile = fomFile
@@ -205,9 +205,9 @@ class nxvasc(object):
     def fillFigureOfMerit(self):
         """Generate the fom data from the objects figure-of-merit function (fomf)"""
         try:
-            self.fom = apply(self.fomf,(self.rawFigureOfMerit,))
-        except Exception, error:
-            print "failed in fillFigureOfMerit", error
+            self.fom = self.fomf(*(self.rawFigureOfMerit,))
+        except Exception as error:
+            print("failed in fillFigureOfMerit", error)
     def generateRawFigureOfMeritData(self):
         """This function takes the mask file associated with self and computes
     a distance from edge map using scipy.ndimage.distance_transform_cdt.
@@ -216,21 +216,21 @@ class nxvasc(object):
         try:
             dfe = ndi.distance_transform_cdt(self.mask)
             self.rawFigureOfMerit = dfe.take(self.inds)
-        except Exception, error:
-            print "failed in generateRawFigureOfMeritData", error
+        except Exception as error:
+            print("failed in generateRawFigureOfMeritData", error)
     def setMask(self, mask):
         """Set the mask using the numpy image mask. In addition to reading the
     mask, the 1D indicies into the 3D image are generate and stored"""
         try:
             self.mask = mask
             self.inds = na.nonzero(self.mask.flat)[0]
-            print "length of self.inds",len(self.inds)
-            print self.inds
+            print("length of self.inds",len(self.inds))
+            print(self.inds)
             self.dim = self.mask.shape[::-1]
-            print self.mask.shape
+            print(self.mask.shape)
             return True
-        except Exception, error:
-            print "failed in setMask", error
+        except Exception as error:
+            print("failed in setMask", error)
     def getMask(self):
         """return the mask file associated with the object"""
         return self.mask
@@ -265,8 +265,8 @@ class nxvasc(object):
                 if( ind == sind ):
                     matchs.append(i)
             return matchs
-        except Exception, error:
-            print "failed in findSeedSegment()",error
+        except Exception as error:
+            print("failed in findSeedSegment()",error)
     def findSegmentChildren(self, segNum,s=-1,loc=0):
         """find segment indicies which are children of the segment indexed by segNum
         segNum: an index into self.paths
@@ -288,10 +288,10 @@ class nxvasc(object):
                         children.append(i)
                     elif( parentEndPoint in self.paths[i] ):
             # this is some kind of error state
-                        print "points do not match at ends but point is common to both paths"
+                        print("points do not match at ends but point is common to both paths")
             return children
-        except Exception, error:
-            print "failed in findSegmentChildren()",error
+        except Exception as error:
+            print("failed in findSegmentChildren()",error)
     
     def save_voxel_map(self, suffix="_vm.pckle", save_mode = 1):
         """write the voxel map to a cPickle file.
@@ -304,22 +304,22 @@ class nxvasc(object):
             else:
                 omode = "w"
             fo = open(self.outputFile+self.vsuffix+suffix,omode)
-            cPickle.dump([self.map_inds,self.vmap],fo,save_mode)
+            pickle.dump([self.map_inds,self.vmap],fo,save_mode)
             fo.close()
-        except Exception, error:
-            print "failed in save_voxel_map()",error
+        except Exception as error:
+            print("failed in save_voxel_map()",error)
             sys.exit()
 
     def estimateVesselSizesFromMap(self):
         """Does a real basic shape estimate from the voxel mapping for each vessel segment
     The function uses matplotlib to generate a png file 
     """
-        tkeys = self.trees.keys()
+        tkeys = list(self.trees.keys())
         lengths = []
         radii = []
         for tkey in tkeys:
             tree = self.trees[tkey]
-            keys = tree.keys()
+            keys = list(tree.keys())
             maxseg = na.max(self.vmap)+1
             for key in keys:
                 seg = tree[key]
@@ -328,7 +328,7 @@ class nxvasc(object):
                 lengths.append(len(path))
                 r = math.sqrt(len(ind)/(math.pi*len(path)))
                 radii.append(r)
-                print "segment ",seg.segmentNumber," volume (voxels): ",len(ind)," length: ",len(path)," estimated radius: ",r
+                print("segment ",seg.segmentNumber," volume (voxels): ",len(ind)," length: ",len(path)," estimated radius: ",r)
         lengths = na.array(lengths)
         radii = na.array(radii)
         plt.plot(lengths,radii)
@@ -357,7 +357,7 @@ class nxvasc(object):
             except:
                 pass
 
-        print maskz.max()
+        print(maskz.max())
         pyplot.subplot(221)
         pyplot.imshow(maskz)
         pyplot.subplot(222)
@@ -419,7 +419,7 @@ class nxvasc(object):
             self.vmap = na.zeros((len(self.map_inds)),na.int16)
             for i in range(points.shape[0]):
                 if( verbose and i % 1000 == 0 ):
-                    print "processing point ", i, " of ", points.shape[0]
+                    print("processing point ", i, " of ", points.shape[0])
                 p = points[i,:]
                 mindist = 1e16
                 mp = 0
@@ -431,16 +431,16 @@ class nxvasc(object):
                         mindist = d
                         mp = k
                 self.vmap[i] = mp
-        except Exception, error:
-            print "Failed in mapVoxels() ",error
+        except Exception as error:
+            print("Failed in mapVoxels() ",error)
         
 
     def fit_ordered_paths(self,maxiter=5):
         """loop through all the ordered paths and fit a least squares (smoothing spline) to the centerline"""
         try:
-            for tkey in self.trees.keys():
+            for tkey in list(self.trees.keys()):
                 tree = self.trees[tkey]
-                keys = tree.keys() 
+                keys = list(tree.keys()) 
                 ftree = {}
                 for key in keys:
                     seg = tree[key]
@@ -448,8 +448,8 @@ class nxvasc(object):
                     ftree[key] = data
                     self.ftrees[tkey] = ftree
             
-        except Exception, error:
-            print "failed in fit_ordered_paths()",error
+        except Exception as error:
+            print("failed in fit_ordered_paths()",error)
             sys.exit()
     def save_fit_paths(self, suffix="_fpaths.pckle", save_mode = 1):
         """Save the least-squares smoothed spline fits of the centerlines to a
@@ -460,10 +460,10 @@ class nxvasc(object):
             else:
                 omode = "w"
             fo = open(self.outputFile+self.vsuffix+suffix,omode)
-            cPickle.dump([self.fpaths,self.paths,self.ftrees],fo,save_mode)
+            pickle.dump([self.fpaths,self.paths,self.ftrees],fo,save_mode)
             fo.close()
-        except Exception, error:
-            print "failed in save_fit_paths()",error
+        except Exception as error:
+            print("failed in save_fit_paths()",error)
             sys.exit()
 
     def save_path_data(self,suffix="_rpaths.pckle", save_mode=1):
@@ -474,10 +474,10 @@ class nxvasc(object):
             else:
                 omode = "w"
             fo = open(self.outputFile+self.vsuffix+suffix,omode)
-            cPickle.dump([self.paths,self.visited,self.trees,self.terminals],fo,save_mode)
+            pickle.dump([self.paths,self.visited,self.trees,self.terminals],fo,save_mode)
             fo.close()
-        except Exception, error:
-            print "failed in save_path_data()",error
+        except Exception as error:
+            print("failed in save_path_data()",error)
             sys.exit()
 
 
@@ -493,8 +493,8 @@ class nxvasc(object):
                                           (ind / nx)%ny,\
                                            ind / nxny]))
             return crd
-        except Exception, error:
-            print "failed in get_crds ", error
+        except Exception as error:
+            print("failed in get_crds ", error)
             return -1
 
 
@@ -550,8 +550,8 @@ class nxvasc(object):
         
             #return cx,cy,cz,dst,ind
             return indc, results
-        except Exception, error:
-            print "failed in getValidNeighborsInformation() ", error
+        except Exception as error:
+            print("failed in getValidNeighborsInformation() ", error)
     def getInds(self,crds):
         """given the x,y,z coordinates return the corresponding 1D index
         
@@ -588,8 +588,8 @@ class nxvasc(object):
                 cz = int(z+0.5)
             ind = cx + cy*self.dim[0]+cz*self.dim[0]*self.dim[1]
             return ind
-        except Exception, error:
-            print error
+        except Exception as error:
+            print(error)
             return None
             
     def getNeighbors( self, inds ):
@@ -617,8 +617,8 @@ class nxvasc(object):
                 n = na.take(nInds[:,i],inds)
                 nghbrs[i] = n
             return nghbrs
-        except Exception, error:
-            print "failed in getNeighbors() ", error
+        except Exception as error:
+            print("failed in getNeighbors() ", error)
             sys.exit()
         
     def createNXGraph( self, verbose = False ):
@@ -626,27 +626,27 @@ class nxvasc(object):
     mask and each of its 26-point neighbors"""
         try:
             if(verbose):
-                print "creating NXGraph"
+                print("creating NXGraph")
             linds = len(self.inds)
             startTime = time.time()
             self.G = nx.Graph()
 
-            for i in xrange(len(self.inds)):
+            for i in range(len(self.inds)):
                 if( verbose and i % 10000 == 0):
-                    print i
+                    print(i)
                 neighbors, results = self.getValidNeighborsInformation(self.inds[i],distances=True,figuresOfMerit=True)
             
                 # Add edges from the current point (ind) to each of its valid neighbors
-                edgeCosts = apply(self.cf,(results['figuresOfMerit'],results['distances'],0))
+                edgeCosts = self.cf(*(results['figuresOfMerit'],results['distances'],0))
                 
                 edges = [(i,neighbors[j],{'weight':edgeCosts[j]}) for j in range(len(neighbors))]
                 #edges = [(i,neighbors[j],edgeCosts[j]) for j in range(len(neighbors))]
                 self.G.add_edges_from(edges)
             self.createGraphTime = time.time()-startTime
             if( verbose ):
-                print "graph creation time: ",self.createGraphTime
-        except Exception, error:
-            print "failed in createNXGraph()", error
+                print("graph creation time: ",self.createGraphTime)
+        except Exception as error:
+            print("failed in createNXGraph()", error)
     
 
     def getGraphTarget( self,  G):
@@ -655,16 +655,16 @@ class nxvasc(object):
     default, distance from edge)"""
         try:
             nodes = na.array(self.G.nodes())
-            print "getGraphTarget",  nodes.max(), nodes.min()
+            print("getGraphTarget",  nodes.max(), nodes.min())
             vals = na.take(self.rawFigureOfMerit,nodes)
             maxind = vals.argmax()
             return nodes[maxind]
-        except Exception, error:
-            print "failed in getGraphTarget()", error
+        except Exception as error:
+            print("failed in getGraphTarget()", error)
     def getDijkstraPaths(self, verbose=False):
         try:
             if( verbose ):
-                print "+++Getting Dijkstra Paths+++"
+                print("+++Getting Dijkstra Paths+++")
             G = self.G
             seed = self.getGraphTarget()
             self.seed = seed
@@ -673,21 +673,21 @@ class nxvasc(object):
             maxPathNode = None
             count = 0
             self.paths = nx.single_source_dijkstra_path(G,seed)
-            items = self.paths.items()
+            items = list(self.paths.items())
             items.sort( lambda x,y:int(len(x[1])-len(y[1])) )
             maxPathNode = items[-1][0] ; maxPathLength = len(items[-1][1])
             self.maxPathNode = maxPathNode    
             self.maxPath = maxPathLength
-            print "maxPathNode =", maxPathNode
-            print "maxPathLength =", maxPathLength
-        except Exception, error:
-            print "failed in getDijkstraPaths()", error
+            print("maxPathNode =", maxPathNode)
+            print("maxPathLength =", maxPathLength)
+        except Exception as error:
+            print("failed in getDijkstraPaths()", error)
             sys.exit()
 
     def getDijkstraPathsSingle(self, verbose=False):
         try:
             if( verbose ):
-                print "getDijkstraPaths"
+                print("getDijkstraPaths")
             G = self.G
             seed = self.getGraphTarget()
             self.seed = seed
@@ -697,7 +697,7 @@ class nxvasc(object):
             count = 0
             for node in G.nodes():
                 if( verbose and count % 100==0 ):
-                    print count, node
+                    print(count, node)
                 count += 1
                 
                 self.paths[node] = nx.dijkstra_path(G,node,seed)
@@ -705,11 +705,11 @@ class nxvasc(object):
                     maxPath = len(self.paths[node])
                     maxPathNode = node
                     
-            print maxPathNode,maxPath
+            print(maxPathNode,maxPath)
             self.maxPathNode = maxPathNode    
             self.maxPath = maxPath
-        except Exception, error:
-            print "failed in getDijkstraPaths()", error
+        except Exception as error:
+            print("failed in getDijkstraPaths()", error)
             sys.exit()
 
     def getEndPointPaths(self, verbose=False):
@@ -719,7 +719,7 @@ class nxvasc(object):
         try:
             self.termInds = self.getInds(self.endpoints)
             if( verbose ):
-                print "getEndPointPaths"
+                print("getEndPointPaths")
             G = self.G
             seed = self.getGraphTarget()
             self.seed = seed
@@ -733,28 +733,28 @@ class nxvasc(object):
                 node = self.maskMap[ind]
                 try:
                     self.paths[node] = nx.astar_path(G,node,seed)
-                    print "processed %d of %d endpoints"%(len(self.paths),len(self.termInds))
+                    print("processed %d of %d endpoints"%(len(self.paths),len(self.termInds)))
                     if( maxPath < len(self.paths[node]) ):
                         maxPath = len(self.paths[node])
                         maxPathNode = node
-                except Exception, error:
-                    print "Could not create path from node",error
-            print maxPathNode,maxPath
+                except Exception as error:
+                    print("Could not create path from node",error)
+            print(maxPathNode,maxPath)
             self.maxPathNode = maxPathNode    
             self.maxPath = maxPath
-        except Exception, error:
-            print "failed in getEndPointPaths()", error
+        except Exception as error:
+            print("failed in getEndPointPaths()", error)
             sys.exit()
     def GenerateAstarPaths(self, inds,  G,  verbose=False): #Modified getEndpointPaths 
         """trace back shortest paths between detected endpoints and the graph
         target"""
         self.termInds = inds   
-        maskMap = dict(zip(inds,range(len(inds))))
-        print "MaskMap",  maskMap
+        maskMap = dict(list(zip(inds,list(range(len(inds))))))
+        print("MaskMap",  maskMap)
         if(verbose):
-            print "Identify A star paths"
+            print("Identify A star paths")
             seed=self.getGraphTarget(G)
-            print "seed", seed
+            print("seed", seed)
             paths={}
             maxPath=-1
             maxPathNode=None
@@ -773,20 +773,20 @@ class nxvasc(object):
                 node = self.maskMap[ind]
                 try:
                     self.paths[node] = nx.astar_path(G,node,seed)
-                    print "processed %d of %d endpoints"%(len(self.paths),len(self.termInds))
+                    print("processed %d of %d endpoints"%(len(self.paths),len(self.termInds)))
                     if( maxPath < len(self.paths[node]) ):
                         maxPath = len(self.paths[node])
                         maxPathNode = node
-                except Exception, error:
-                    print "Could not create path from node",error
-            print maxPathNode,maxPath
+                except Exception as error:
+                    print("Could not create path from node",error)
+            print(maxPathNode,maxPath)
             self.maxPathNode = maxPathNode    
             self.maxPath = maxPath
             
     def traceBackPaths4(self):
         """loop through the existing paths from longest to shortest and truncate
         paths when they intersect an existing path"""
-        pathItems = self.paths.items()
+        pathItems = list(self.paths.items())
         pathItems.sort(lambda x,y:len(x[1])-len(y[1]),reverse=True)
         rootPath = Path()
         rootPath.extend(pathItems.pop(0)[1])
@@ -811,7 +811,7 @@ class nxvasc(object):
         """return the edge paths for the graph as a list of lists"""
         paths = []
         for n, nbrs in self.SG.adjacency_iter():
-            for nbr, eattr in nbrs.iteritems():
+            for nbr, eattr in nbrs.items():
                 paths.append([n]+eattr['path']+[nbr])
         return paths
 
@@ -821,7 +821,7 @@ class nxvasc(object):
         
         Currently I'm ending up with gaps at the bifurcations. This needs to be
         fixed."""
-        pathItems = self.paths.items()
+        pathItems = list(self.paths.items())
         pathItems.sort(lambda x,y:len(x[1])-len(y[1]),reverse=True)
         
         # create a networkx graph to hold the segments
@@ -829,7 +829,7 @@ class nxvasc(object):
 
         rootPath = pathItems.pop(0)[1]
         if( self.seed != rootPath[-1] ):
-            print "incorrect root path"
+            print("incorrect root path")
             return
         self.SG.add_edge(rootPath[-1],rootPath[0],path=rootPath[-2:0:-1])
         starttime=time.time()
@@ -848,25 +848,25 @@ class nxvasc(object):
                 i += 1
     def get_costfunction(self ):
         try:
-            print "+++++ get_costfunction +++++"
+            print("+++++ get_costfunction +++++")
             self.traceBackMaskDictionary()
             self.generateDijkstraCostImg()
             return
-        except Exception, error:
-            print "failed in get_costfunction() ", error
+        except Exception as error:
+            print("failed in get_costfunction() ", error)
             sys.exit()
 
     def process(self):
         """This is the `main' method that invokes the tree generation steps"""
         try:
-            print "+++++ process() +++++"
+            print("+++++ process() +++++")
             #self.get_costfunction()
             self.labelMaskStructures()
             self.get_costfunction()
             # write out data
             self.save_cost_function_dijkstra()
-        except Exception, error:
-            print "failed in process() ", error
+        except Exception as error:
+            print("failed in process() ", error)
 
     def getValidIndicies(self, points):
         """...
@@ -876,8 +876,8 @@ class nxvasc(object):
         try:
             inds = [ i for i in range(points.size) if points.flat[i] in self.maskSet ]
             return inds
-        except Exception, error:
-            print "failed in getValidIndicies", error
+        except Exception as error:
+            print("failed in getValidIndicies", error)
             return -1
 
 
@@ -894,8 +894,8 @@ class nxvasc(object):
 
             self.xmip = self.mask.max(axis=2)
             self.xbuffer = self.mask.argmax(axis=2)
-        except Exception, error:
-            print "failed in getMaskMips", error
+        except Exception as error:
+            print("failed in getMaskMips", error)
     def define3x3_2DEndpointKernels(self):
         """Define the binary masks used with the hit or miss
         filter to detect vascular endpoints"""
@@ -912,9 +912,9 @@ class nxvasc(object):
                         kij = k.copy()
                         kij[i,j] = 1
                         self.khm2d.append(kij)
-            print "%d kernels created"%len(self.khm2d)
-        except Exception, error:
-            print "failed in define3x3_2DEndpointKernels", error
+            print("%d kernels created"%len(self.khm2d))
+        except Exception as error:
+            print("failed in define3x3_2DEndpointKernels", error)
 
     def hitOrMiss2DDetection(self,mask,buffer):
         try:
@@ -924,14 +924,14 @@ class nxvasc(object):
             crds = na.nonzero(hm)
             binds = buffer[crds[0],crds[1]]
             return crds,binds
-        except Exception, error:
-            print error
+        except Exception as error:
+            print(error)
     def endPointsFromCritPoints(self,fname):
         """Convert critical points file into an endpoints list. I'll need to
         gneralize this sot ath I can specify my rules for specifying which
         coordiantes (if any) to ignore"""
         fo = open(fname,'rb')
-        data = cPickle.load(fo)
+        data = pickle.load(fo)
         self.endpoints = set([])
         for d in data:
             if( d.getLabel()=='mipz' ):
@@ -941,24 +941,24 @@ class nxvasc(object):
             elif( d.getLabel() == 'mipx' ):
                 self.endpoints.add( (self.xbuffer[d[2],d[1]],d[1],d[2]) )
         
-        print "%d unique endpoints identified"%len(self.endpoints)
+        print("%d unique endpoints identified"%len(self.endpoints))
 
     def endPointDetection2D(self):
         self.endpoints = set([])
         cxy,cz = self.hitOrMiss2DDetection(self.zmip,self.zbuffer)
-        print "%d endpoints detected in zmip"%len(cz)
+        print("%d endpoints detected in zmip"%len(cz))
         for i in range(len(cz)):
             self.endpoints.add((cxy[1][i],cxy[0][i],cz[i]))
         cxz,cy = self.hitOrMiss2DDetection(self.ymip,self.ybuffer)
-        print "%d endpoints detected in ymip"%len(cy)
+        print("%d endpoints detected in ymip"%len(cy))
         for i in range(len(cy)):
             self.endpoints.add((cxz[1][i],cy[i],cxz[0][i]))
         cyz,cx = self.hitOrMiss2DDetection(self.xmip,self.xbuffer)
-        print "%d endpoints detected in xmip"%len(cx)
+        print("%d endpoints detected in xmip"%len(cx))
         for i in range(len(cx)):
             self.endpoints.add((cx[i],cyz[1][i],cyz[0][i]))
 
-        print "%d unique endpoints identified"%len(self.endpoints)
+        print("%d unique endpoints identified"%len(self.endpoints))
 
     def viewEndPoints(self):
         """view the detected endpoints superimposed on the MIP images"""
@@ -979,8 +979,8 @@ class nxvasc(object):
             pyplot.imshow(tmpx)
             
             pyplot.show()
-        except Exception, error:
-            print "failed in veiwEndPoints", error
+        except Exception as error:
+            print("failed in veiwEndPoints", error)
     def insertPathAtNode(self,parentNode,childNode,insertPoint,path):
         """inserts a path into the object Segment Graph. Placement of insertion
         is specified by parentNode,childNode and insertPoint
@@ -1020,7 +1020,7 @@ class nxvasc(object):
                 if(n == p ):
                     self.insertPathAtNode(n,None,None,path[:k])
                     return 
-                for nbr, eattr in nbrs.iteritems():
+                for nbr, eattr in nbrs.items():
                     # check to see of path node equals nbr
                     if( nbr == p ):
                         self.insertPathAtNode(nbr,None,None,path[:k])
@@ -1032,7 +1032,7 @@ class nxvasc(object):
                         return 
                          
 def findIntersectPoint2(a,b):
-    for i in xrange(len(b)):
+    for i in range(len(b)):
         bb = b[i]
         if( bb in a ):
             return i,a.index(bb)
@@ -1071,19 +1071,19 @@ def findIntersectPoint(a,b):
         }"""
 
         return weave.inline(code,['a','b'])
-    except Exception, error:
-        print error
+    except Exception as error:
+        print(error)
        
 def checkUniqueness(newPath,graph):
     setnp = set(newPath)
     for n, nbrs in graph.adjacency_iter():
-        for nbr, eattr in nbrs.iteritems():
+        for nbr, eattr in nbrs.items():
             currentPath = eattr['path']
             notUnique = setnp.intersection(currentPath)
             if( notUnique ):
-                print "newPath is not unique from path between (%d,%d)"%(n,nbr)
-                print notUnique
-                print '*'*42
+                print("newPath is not unique from path between (%d,%d)"%(n,nbr))
+                print(notUnique)
+                print('*'*42)
 
 #def test_nxvascDijkstra():
 #    """tests the information gathered using the Dijkstra algorithm"""

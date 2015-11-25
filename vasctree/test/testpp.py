@@ -30,17 +30,17 @@ def test_nxvascAstar():
     vx.fillFigureOfMerit()
     vx.createNXGraph(verbose=True)
     vx.getEndPointPaths() #Uses the astar to find the paths.
-    print "trace back paths"
+    print("trace back paths")
     vx.traceBackPaths4()
-    print "prune paths"
+    print("prune paths")
     vx.pruneSplitPaths()
-    print "plot paths"
-    vx.showPaths(vx.paths.values())
-    raw_input('continue')
+    print("plot paths")
+    vx.showPaths(list(vx.paths.values()))
+    input('continue')
     vx.showPaths(vx.splitPaths,label="Orthogonal MIP Images with Centerlines")
-    raw_input('continue')
+    input('continue')
     vx.plotPaths(vx.splitPaths,label="firstPlot",show=True)
-    raw_input('continue')
+    input('continue')
     
 def test_nxvascDijkstra():
     """tests the information gathered using the Dijkstra algorithm"""
@@ -64,16 +64,16 @@ def test_nxvascDijkstra():
     vx.createNXGraph(verbose=True)
     vx.getDijkstraPaths(verbose=True) #uses the dijkstra algorithm to find paths
     vx.traceBackPaths()
-    print "trace back paths"
+    print("trace back paths")
     vx.pruneSplitPaths()
-    print "prune paths"
-    vx.showPaths(vx.paths.values())
-    raw_input('continue')
+    print("prune paths")
+    vx.showPaths(list(vx.paths.values()))
+    input('continue')
     vx.showPaths(vx.splitPaths,label="Orthogonal MIP Images with Centerlines")
-    raw_input('continue')
+    input('continue')
     vx.plotPaths(vx.splitPaths,label="firstPlot",show=True)
-    raw_input('continue')
-    print "FINISHED"
+    input('continue')
+    print("FINISHED")
 
 def main():
     import pp #parallel python
@@ -86,13 +86,13 @@ def main():
     #if the fxn requires something to passed in to it you would put that
     #information in () following the fxn call see ex.
     result1=task1()
-    print "Task 1, the Dijkstra test is complete"
-    print "Task 1 took", time.time()-start_time1,"s"
+    print("Task 1, the Dijkstra test is complete")
+    print("Task 1 took", time.time()-start_time1,"s")
     start_time2=time.time()
     task2=job_server.submit(test_nxvascAstar)
     result2=task2()
-    print "Task 2, the Astar test is complete"
-    print "Task 2 took", time.time()-start_time2,"s"
+    print("Task 2, the Astar test is complete")
+    print("Task 2 took", time.time()-start_time2,"s")
     job_server.print_stats()
 
 if __name__ == '__main__':

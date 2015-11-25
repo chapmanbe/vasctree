@@ -18,8 +18,8 @@ def main():
     startTime = time.time()
     vm.createNXGraph()
     endTime = time.time()
-    print "Elapsed time",endTime-startTime
-    print "number of edges",vm.G.number_of_edges()
+    print("Elapsed time",endTime-startTime)
+    print("number of edges",vm.G.number_of_edges())
     vg = VascGraph.VascGraph(vm.G)
     vg.getAPaths(vm.findSeed(), vm.getSurfacePoints())
     #vm.G = None

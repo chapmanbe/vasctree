@@ -10,13 +10,13 @@ def viewGraph(g, sub=3,title=''):
     nodes = np.array(nodes[0:100])
     #mlab.points3d(nodes[:,2],nodes[:,1],nodes[:,0],color=(0.0,0.0,1.0))
     edges = g.edges(data=True)
-    print len(edges)
-    raw_input('continue')
+    print(len(edges))
+    input('continue')
     count = 0
     for n1, n2, edge in edges:
         count += 1
         if( count % 100 == 0 ):
-            print count
+            print(count)
         path = [n1]+edge['path']+[n2]
         pa = np.array(path)
         #print pa
@@ -38,7 +38,7 @@ def viewImgWithNodes(img, spacing, contours,g, title=''):
     #mlab.pipeline.iso_surface(src, contours=contours, opacity=0.2)
     nodes = np.array(g.nodes())
     dsize = 4*np.ones(nodes.shape[0],dtype='float32')
-    print dsize.shape,nodes.shape
+    print(dsize.shape,nodes.shape)
     #mlab.points3d(nodes[:,0],nodes[:,1],nodes[:,2],color=(0.0,1.0,0.0))
     mlab.points3d(nodes[:,2],nodes[:,1],nodes[:,0],dsize,color=(0.0,0.0,1.0), scale_factor=0.25)
     
@@ -54,8 +54,8 @@ def viewImgWithNodes(img, spacing, contours,g, title=''):
     mlab.show()
     
 def viewImg2(img, spacing, contours):
-    print "In viewImg2: (min,max)=(%f,%f)"%(img.min(),img.max())
-    print "contours=",contours
+    print("In viewImg2: (min,max)=(%f,%f)"%(img.min(),img.max()))
+    print("contours=",contours)
     mlab.figure(bgcolor=(0, 0, 0), size=(400, 400))
     
     src = mlab.pipeline.scalar_field(img)
@@ -100,7 +100,7 @@ def viewImg(img, spacing, contours):
     # iso-surfaces to the inner of the brain. We do this with the ExtractGrid
     # filter.
     blur = mlab.pipeline.user_defined(blur, filter='ImageGaussianSmooth')
-    print "blur type is",type(blur),blur.max()
+    print("blur type is",type(blur),blur.max())
     #voi = mlab.pipeline.extract_grid(blur)
     #voi.set(x_min=125, x_max=193, y_min=92, y_max=125, z_min=34, z_max=75)
     

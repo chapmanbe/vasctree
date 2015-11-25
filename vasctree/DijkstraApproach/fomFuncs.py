@@ -2,14 +2,14 @@ import numpy as na
 def fomf1(fom):
     try:
         return fom.max()-fom
-    except Exception, error:
-        print "failed in fomf1() ", error
+    except Exception as error:
+        print("failed in fomf1() ", error)
         sys.exit()  
 def fomf2(fom):
     try:
         return 1.0/fom
-    except Exception, error:
-        print "failed in fomf2() ", error
+    except Exception as error:
+        print("failed in fomf2() ", error)
         sys.exit()
         
 def fomf3(fom):
@@ -22,15 +22,15 @@ def fomf3(fom):
             self.compute_max_mdfe_values()
         else:
             if( self.read_max_mdfe_values() == 0 ):
-                print "computing max_mdfe_values"
+                print("computing max_mdfe_values")
                 self.compute_max_mdfe_values()
         temp =  1.0-self.mdfe/self.max_mdfe
         #temp = self.max_mdfe-self.mdfe
         self.mdfe = 0
         self.max_mdfe = 0
         return temp
-    except Exception, error:
-        print "failed in fomf3 ", error
+    except Exception as error:
+        print("failed in fomf3 ", error)
         sys.exit()
 def compute_mdfe_values(fom, Nmax=20.0, view=0 ):
     """This function is an implementation of Dennis and Liang's algorithm for 
@@ -42,7 +42,7 @@ def compute_mdfe_values(fom, Nmax=20.0, view=0 ):
         # For efficient tracking of neighbors use the mask dictionary
         
         if( self.read_mask_dictionary(get_dictionaries=[0,1]) == 0 ):
-            print "Generating dictionary of neighborhood relationships"
+            print("Generating dictionary of neighborhood relationships")
             self.define_mask_dictionary(define_dictionaries=[1,1])
             self.save_mask_dictionary()
     
@@ -51,18 +51,18 @@ def compute_mdfe_values(fom, Nmax=20.0, view=0 ):
         # the keys for self.Neighbors are just the indicies from 0 to Numpoints-1 
         #for key in self.Neighbors.keys():
         incr = len(self.fom) / 1000
-        print "Computing MDFE values"
+        print("Computing MDFE values")
         for i in range(len(self.fom)):
             if( i % incr == 0 ):
-                print "processing voxel ",i," of ",len(self.fom)
+                print("processing voxel ",i," of ",len(self.fom))
             val = self.fom_raw[i]
             nvals = len(Numeric.nonzero( Numeric.take(self.fom_raw,self.Neighbors[i]) == val ))	
             self.mdfe[i] = val + nvals/Nmax
         fo = open(self.maskfile+"_mdfe.pckle","wb")
         cPickle.dump([self.mdfe],fo,1)
         fo.close()
-    except Exception, error:
-        print "Failed in compute_mdfe_values ", error
+    except Exception as error:
+        print("Failed in compute_mdfe_values ", error)
 def compute_max_mdfe_values( self ):
     """This function computes the local maximum DFE value following Liang"""
     try:
@@ -80,6 +80,6 @@ def compute_max_mdfe_values( self ):
         fo = open(self.maskfile+"_maxmdfe.pckle","wb")
         cPickle.dump([self.max_mdfe],fo,1)
         fo.close()
-    except Exception, error:
-        print "compute_max_mdfe_values ", error
+    except Exception as error:
+        print("compute_max_mdfe_values ", error)
 

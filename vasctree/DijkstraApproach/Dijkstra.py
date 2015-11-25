@@ -61,15 +61,14 @@ def Dijkstra(G,start,end=None):
 			    vwLength = D[v] + G[v][w]
 			    if w in D:
 				    if vwLength < D[w]:
-					    raise ValueError, \
-      "Dijkstra: found better path to already-final vertex"
+					    raise ValueError("Dijkstra: found better path to already-final vertex")
 			    elif w not in Q or vwLength < Q[w]:
 				    Q[w] = vwLength
 				    P[w] = v
 	
 	    return (D,P)
-	except Exception, error:
-	    print "failed in Dijkstra ", error
+	except Exception as error:
+	    print("failed in Dijkstra ", error)
 			
 def shortestPath(G,start,end):
 	"""

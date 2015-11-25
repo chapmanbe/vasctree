@@ -70,7 +70,7 @@ class GraphViewer(object):
         # mlab.clf()
         self.figure.scene.disable_render = True
         self.crds = {}
-        print "root information:",self.root_wcrd, self.root
+        print("root information:",self.root_wcrd, self.root)
 
         # create drawables for bifurcations and endpoints
         self.narray = np.zeros((len(self.nodes), 3), dtype=np.float32)
@@ -129,10 +129,10 @@ class GraphViewer(object):
                                                                color=(0, 0, 0),
                                                                # color=clrt,
                                                                tube_radius=.3)
-            except KeyError, error:
-                print "KeyError", error
-            except IndexError, error:
-                print "IndexError", error
+            except KeyError as error:
+                print("KeyError", error)
+            except IndexError as error:
+                print("IndexError", error)
 
         self.surfaces = mlab.points3d(x, y, z, s,
                                       # colormap="Greys",
