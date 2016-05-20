@@ -5,16 +5,9 @@ import vasctrees.viewGraph as viewGraph
 import networkx as nx
 import argparse
 import gzip
-def readGraphs(fname):
-    try:
-        fo = gzip.open(fname,"rb")
-        data = pickle.load(fo)
-        fo.close()
-    except:
-        fo = file(fname,"rb")
-        data = pickle.load(fo)
-        fo.close()
-    return data
+from vasctrees.utils import readGraphs
+
+
 def getKey(g):
     keys = list(g.keys())
     txt = "Select number of desired key:\n"
@@ -47,21 +40,30 @@ def getGraphFromData(data,datakey,graphkey):
     return g
 def getParser():
     try:
-        parser = argparse.ArgumentParser(description="command line processer for viewGraphs.py")
-        parser.add_argument("-f","--file",dest='fname',
-                          help='name or directory for fixedImage')
-        parser.add_argument("-o","--object_number",dest='objNum',type=int,default=-1)
-        parser.add_argument('-l','--label',dest='label',default='')
-        parser.add_argument('-s','--surface_display_off',dest='surface_display',action='store_false',default=True)
-        parser.add_argument('-m','--midplane_display_off',dest='midplane_display',action='store_false',default=True)
-        parser.add_argument("-u","--unordered",action='store_true', dest='view_unordered',
-                default=False) 
-
-
+        parser = argparse.ArgumentParser(
+            description="command line processer for viewGraphs.py")
+        parser.add_argument("-f", "--file", dest='fname',
+                            help='name or directory for fixedImage')
+        parser.add_argument("-o", "--object_number",
+                            dest='objNum', type=int, default=1)
+        parser.add_argument('-l', '--label', dest='label', default='')
+        parser.add_argument('-s', '--surface',
+                            dest='surface_display',
+                            action='store_true',
+                            default=False)
+        parser.add_argument('-m', '--midplane',
+                            dest='midplane_display',
+                            action='store_true',
+                            default=False)
+        parser.add_argument("-u", "--unordered",
+                            action='store_true', dest='view_unordered',
+                            default=False)
         return parser
     except Exception as error:
-        print("failed in getParser", error)  
+        print("failed in getParser", error)
         sys.exit(0)
+
+
 def getSkelGraphKeys(grphs):
     keys = list(grphs.keys())
     tmp = 'enter key for graph to view\n'
